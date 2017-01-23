@@ -29,7 +29,7 @@ fixture data by running:
 
 .. code-block:: console
 
-   $ pip install -e .[all
+   $ pip install -e .[all]
    $ cd examples
    $ ./app-setup.sh
    $ ./app-fixtures.sh
@@ -60,8 +60,12 @@ from flask import Flask
 from flask_babelex import Babel
 
 from invenio_pidrelations import InvenioPIDRelations
+from invenio_pidstore import InvenioPIDStore
+from invenio_db import InvenioDB
 
 # Create Flask application
 app = Flask(__name__)
 Babel(app)
+InvenioDB(app)
+InvenioPIDStore(app)
 InvenioPIDRelations(app)

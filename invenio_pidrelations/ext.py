@@ -28,8 +28,6 @@ from __future__ import absolute_import, print_function
 
 from flask_babelex import gettext as _
 
-from .views import blueprint
-
 
 class InvenioPIDRelations(object):
     """Invenio-PIDRelations extension."""
@@ -46,7 +44,6 @@ class InvenioPIDRelations(object):
     def init_app(self, app):
         """Flask application initialization."""
         self.init_config(app)
-        app.register_blueprint(blueprint)
         app.extensions['invenio-pidrelations'] = self
 
     def init_config(self, app):

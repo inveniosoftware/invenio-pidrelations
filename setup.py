@@ -99,6 +99,9 @@ setup(
         'invenio_base.apps': [
             'invenio_pidrelations = invenio_pidrelations:InvenioPIDRelations',
         ],
+        'invenio_db.models': [
+            'invenio_pidrelations = invenio_pidrelations.models',
+        ],
         'invenio_i18n.translations': [
             'messages = invenio_pidrelations',
         ],

@@ -26,20 +26,19 @@
 
 from __future__ import absolute_import, print_function
 
-from invenio_pidrelations import InvenioPIDRelations
+from invenio_pidstore.models import PersistentIdentifier
+
 from invenio_pidrelations.models import PIDRelation, RelationType
-from invenio_pidstore.models import PersistentIdentifier, PIDStatus
-from invenio_db import db as db_
 
 
-def test_models(app, db):
+def test_pidrelation(app, db):
     """Test version import."""
     pid = PersistentIdentifier.create('doi', 'foobar.v1')
     head_pid, pid_relation = PIDRelation.create_head_pid(pid, 'foobar')
-    import ipdb; ipdb.set_trace()
+    db.session.commit()
+
     assert head_pid.pid_value == 'foobar'
     assert head_pid.pid_type == pid.pid_type
-    pass
 
 
 def test_foo(app, db):
@@ -79,4 +78,37 @@ def test_foo(app, db):
     assert PIDRelation.get_head_pid(pid1) is None
     assert PIDRelation.get_head_pid(c1) is None
     assert PIDRelation.get_head_pid(c1r1) is None
-    import ipdb; ipdb.set_trace()
+
+
+def test_head_pid_methods(app, db):
+    """Test Head PID methods."""
+
+    # Create an orphan PID
+    pid = PersistentIdentifier.create('doi', 'foobar.v1')
+    db.session.commit()
+
+    assert not PIDRelation.is_head_pid(pid)
+    assert PIDRelation.get_head_pid(pid) is None
+
+    # Add a Head PID to the orphan PID
+    head_pid, pid_relation = PIDRelation.create_head_pid(pid, 'foobar')
+    db.session.commit()
+
+    assert PIDRelation.is_head_pid(head_pid)
+    assert not PIDRelation.is_head_pid(pid)
+    assert PIDRelation.get_head_pid(head_pid) == head_pid
+    assert PIDRelation.get_head_pid(pid) == head_pid
+
+
+def test_version_pid_methods(app, db):
+    pid = PersistentIdentifier.create('doi', 'foobar.v1')
+    assert PIDRelation.is_version_pid(pid)
+    assert PIDRelation.is_latest_pid(pid)
+
+    head_pid, pid_relation = PIDRelation.create_head_pid(pid, 'foobar')
+    db.session.commit()
+
+    assert not PIDRelation.is_head_pid(pid)
+
+    assert PIDRelation.get_head_pid(head_pid) == head_pid
+    assert PIDRelation.get_head_pid(pid) == head_pid
