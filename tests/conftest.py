@@ -30,11 +30,18 @@ import shutil
 import os
 import tempfile
 
+import six
 import pytest
 from flask import Flask
 from flask_babelex import Babel
 from invenio_db import InvenioDB, db as db_
+from invenio_indexer import InvenioIndexer
+from invenio_records import InvenioRecords, Record
+from invenio_search import InvenioSearch, current_search, current_search_client
 from invenio_pidstore import InvenioPIDStore
+from invenio_pidstore.fetchers import recid_fetcher
+from invenio_indexer.api import RecordIndexer
+
 from invenio_pidrelations import InvenioPIDRelations
 
 from sqlalchemy_utils.functions import create_database, database_exists
@@ -60,10 +67,14 @@ def base_app(instance_path):
             'SQLALCHEMY_DATABASE_URI', 'sqlite:///test.db'),
         SQLALCHEMY_TRACK_MODIFICATIONS=True,
         TESTING=True,
+        PIDRELATIONS_DEFAULT_PID_FETCHER = 'recid',
     )
     InvenioPIDStore(app_)
     InvenioPIDRelations(app_)
     InvenioDB(app_)
+    InvenioRecords(app_)
+    InvenioIndexer(app_)
+    InvenioSearch(app_)
     Babel(app_)
     return app_
 
@@ -122,3 +133,41 @@ def pids(db):
         'c1r2': c1r2,
         'pid1': pid1,
     }
+
+
+@pytest.fixture()
+def records(pids, db):
+    pid_versions = ['h1v1', 'h1v2', 'h2v1']
+    schema = {
+        'type': 'object',
+        'properties': {
+            'title': {'type': 'string'},
+        },
+    }
+    data = {
+        name: {'title': 'Test version {}'.format(name),
+               'control_number': pids[name].pid_value,
+               '$schema': schema}
+        for name in pid_versions
+    }
+    records = dict()
+    for name in pid_versions:
+        record = Record.create(data[name])
+        pids[name].assign('rec', record.id)
+        records[name] = record
+    return records
+
+
+@pytest.fixture()
+def indexed_records(records):
+    current_search_client.indices.flush('*')
+    # delete all elasticsearch indices and recreate them
+    for deleted in current_search.delete(ignore=[404]):
+        pass
+    for created in current_search.create(None):
+        pass
+    # flush the indices so that indexed records are searchable
+    for pid_name, record in records.items():
+        RecordIndexer().index(record)
+    current_search_client.indices.flush('*')
+    return records

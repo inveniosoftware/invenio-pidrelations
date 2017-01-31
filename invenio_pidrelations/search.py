@@ -22,52 +22,30 @@
 # waive the privileges and immunities granted to it by virtue of its status
 # as an Intergovernmental Organization or submit itself to any jurisdiction.
 
-"""Minimal Flask application example.
-
-First install Invenio-PIDRelations, setup the application and load
-fixture data by running:
-
-.. code-block:: console
-
-   $ pip install -e .[all]
-   $ cd examples
-   $ ./app-setup.sh
-   $ ./app-fixtures.sh
-
-Next, start the development server:
-
-.. code-block:: console
-
-   $ export FLASK_APP=app.py FLASK_DEBUG=1
-   $ flask run
-
-and open the example application in your browser:
-
-.. code-block:: console
-
-    $ open http://127.0.0.1:5000/
-
-To reset the example application run:
-
-.. code-block:: console
-
-    $ ./app-teardown.sh
-"""
-
 from __future__ import absolute_import, print_function
 
-from flask import Flask
-from flask_babelex import Babel
+from elasticsearch_dsl.query import Bool, Q
 
-from invenio_indexer import InvenioIndexer
-from invenio_pidrelations import InvenioPIDRelations
-from invenio_pidstore import InvenioPIDStore
-from invenio_db import InvenioDB
+class LatestVersionFilter(object):
+    """Shortcut for defining default filters with query parser."""
 
-# Create Flask application
-app = Flask(__name__)
-Babel(app)
-InvenioDB(app)
-InvenioPIDStore(app)
-InvenioPIDRelations(app)
-InvenioIndexer(app)
+    def __init__(self, query=None, query_parser=None):
+        """Build filter property with query parser."""
+        self._query = Q('term', **{'relation.version.is_latest': True})
+        if query is not None:
+            self._query = Bool(
+                must=[
+                    query,
+                    self._query
+                ],
+            )
+        self.query_parser = query_parser or (lambda x: x)
+
+    @property
+    def query(self):
+        """Build lazy query if needed."""
+        return self._query() if callable(self._query) else self._query
+
+    def __get__(self, obj, objtype):
+        """Return parsed query."""
+        return self.query_parser(self.query)

@@ -56,6 +56,9 @@ extras_require = {
     'sqlite': [
         'invenio-db>=1.0.0b1',
     ],
+    'indexer': [
+        'invenio-indexer>=1.0.0a9',
+    ],
 }
 
 extras_require['all'] = []
@@ -69,7 +72,9 @@ setup_requires = [
 
 install_requires = [
     'Flask-BabelEx>=0.9.2',
-    'invenio-pidstore>=1.0.0b1'
+    'invenio-pidstore>=1.0.0b1',
+    'invenio-records>=1.0.0b1',
+    'six>=1.10',
 ]
 
 packages = find_packages()
