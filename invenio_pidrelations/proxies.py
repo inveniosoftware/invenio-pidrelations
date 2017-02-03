@@ -22,17 +22,13 @@
 # waive the privileges and immunities granted to it by virtue of its status
 # as an Intergovernmental Organization or submit itself to any jurisdiction.
 
-"""Invenio module that adds PID relations to the Invenio-PIDStore module."""
+"""Proxy objects for easier access to application objects."""
 
-from invenio_pidrelations.models import RelationType
+from flask import current_app
+from werkzeug.local import LocalProxy
 
-PIDRELATIONS_INDEXED_RELATIONS = dict(
-    doi=dict(
-        field='version',
-        api='invenio_pidrelations.api:PIDVersionRelation',
-        # FIXME: for now the API does not provide any way to know if a relation
-        # is ordered or not. Thus we write it here.
-        ordered=True,
-    )
-)
-"""Default PID fetcher."""
+
+def _get_current_pidrelations():
+    return current_app.extensions['invenio-pidrelations']
+
+current_pidrelations = LocalProxy(_get_current_pidrelations)

@@ -22,17 +22,29 @@
 # waive the privileges and immunities granted to it by virtue of its status
 # as an Intergovernmental Organization or submit itself to any jurisdiction.
 
-"""Invenio module that adds PID relations to the Invenio-PIDStore module."""
+"""Test search filter."""
 
-from invenio_pidrelations.models import RelationType
+from __future__ import absolute_import, print_function
 
-PIDRELATIONS_INDEXED_RELATIONS = dict(
-    doi=dict(
-        field='version',
-        api='invenio_pidrelations.api:PIDVersionRelation',
-        # FIXME: for now the API does not provide any way to know if a relation
-        # is ordered or not. Thus we write it here.
-        ordered=True,
-    )
-)
-"""Default PID fetcher."""
+from invenio_indexer.tasks import process_bulk_queue
+from invenio_search import current_search_client
+from invenio_pidstore.fetchers import recid_fetcher
+from invenio_search.api import RecordsSearch, DefaultFilter
+
+from invenio_pidrelations.search import LatestVersionFilter
+
+
+class LatestVersionSearch(RecordsSearch):
+    class Meta:
+        """Test search class."""
+
+        default_filter = LatestVersionFilter()
+
+
+def test_search_filter(app, indexed_records, pids):
+    """Check that LatestVersionFilter returns only latest versions."""
+    search = LatestVersionSearch()
+    query = search.query()
+    result = query.execute()
+    for hit in result.hits:
+        assert hit.relation.version.is_latest is True

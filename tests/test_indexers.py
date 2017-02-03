@@ -22,52 +22,29 @@
 # waive the privileges and immunities granted to it by virtue of its status
 # as an Intergovernmental Organization or submit itself to any jurisdiction.
 
-"""Minimal Flask application example.
-
-First install Invenio-PIDRelations, setup the application and load
-fixture data by running:
-
-.. code-block:: console
-
-   $ pip install -e .[all]
-   $ cd examples
-   $ ./app-setup.sh
-   $ ./app-fixtures.sh
-
-Next, start the development server:
-
-.. code-block:: console
-
-   $ export FLASK_APP=app.py FLASK_DEBUG=1
-   $ flask run
-
-and open the example application in your browser:
-
-.. code-block:: console
-
-    $ open http://127.0.0.1:5000/
-
-To reset the example application run:
-
-.. code-block:: console
-
-    $ ./app-teardown.sh
-"""
+"""Test indexers."""
 
 from __future__ import absolute_import, print_function
 
-from flask import Flask
-from flask_babelex import Babel
+from invenio_indexer.tasks import process_bulk_queue
+from invenio_search import current_search_client
+from invenio_pidstore.fetchers import recid_fetcher
 
-from invenio_indexer import InvenioIndexer
-from invenio_pidrelations import InvenioPIDRelations
-from invenio_pidstore import InvenioPIDStore
-from invenio_db import InvenioDB
+from invenio_pidrelations.api import PIDVersionRelation
 
-# Create Flask application
-app = Flask(__name__)
-Babel(app)
-InvenioDB(app)
-InvenioPIDStore(app)
-InvenioPIDRelations(app)
-InvenioIndexer(app)
+
+def test_indexers(app, indexed_records, pids):
+    """Test that the default indexer correctly index version relations."""
+    hits = current_search_client.search()['hits']['hits']
+    for name, record in indexed_records.items():
+        pid = pids[name]
+        hit = next(hit for hit in hits
+                   if hit['_source']['control_number'] == pid.pid_value)
+        relation = hit['_source']['relation']
+        assert relation['version']['parent'] == \
+            PIDVersionRelation.get_head(pid).pid_value
+        assert relation['version']['siblings'] == [
+            sib.pid_value for sib in PIDVersionRelation.get_all_versions(pid)
+        ]
+        assert relation['version']['is_latest'] == \
+            PIDVersionRelation.is_latest(pid)
