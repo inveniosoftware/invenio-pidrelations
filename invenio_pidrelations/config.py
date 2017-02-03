@@ -29,3 +29,8 @@
 
 PIDRELATIONS_DEFAULT_VALUE = 'foobar'
 """Default value for the application."""
+
+PIDRELATIONS_RELATION_TYPES = dict(
+    VERSION=0,
+    COLLECTION=1,
+)
