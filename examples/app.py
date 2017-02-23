@@ -57,6 +57,7 @@ To reset the example application run:
 from __future__ import absolute_import, print_function
 
 from flask import Flask, redirect, render_template, request, url_for
+from flask_babelex import Babel
 from invenio_db import InvenioDB, db
 from invenio_indexer import InvenioIndexer
 from invenio_pidstore import InvenioPIDStore
@@ -69,7 +70,8 @@ from marshmallow import Schema, fields
 from invenio_pidrelations import InvenioPIDRelations
 from invenio_pidrelations.contrib.records import versioned_minter
 from invenio_pidrelations.contrib.versioning import PIDVersioning
-from invenio_pidrelations.serializers.schemas import PIDRelationsMixin
+from invenio_pidrelations.serializers.schemas import PIDRelationsMixin, \
+    RelationsSchema
 from invenio_pidrelations.views import blueprint as pidrelations_blueprint
 
 # Create Flask application

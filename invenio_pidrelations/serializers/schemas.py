@@ -24,26 +24,119 @@
 
 """PIDRelation JSON Schema for metadata."""
 
-from flask import current_app
 from marshmallow import Schema, fields, pre_dump
 from werkzeug.utils import cached_property
 
-from invenio_pidrelations.api import PIDConcept
 from invenio_pidrelations.models import PIDRelation
+from invenio_pidrelations.api import PIDConcept
 
-from ..utils import obj_or_import_string, resolve_relation_type_config
-from .utils import serialize_relations
+from flask import current_app
+
+# from .utils import serialize_relations
 
 
 class PIDSchema(Schema):
-    """PID schema."""
-
     pid_type = fields.String()
     pid_value = fields.String()
 
 
 class RelationSchema(Schema):
-    """Generic PID relation schema."""
+    """Relation metadata schema."""
+
+    # NOTE: Maybe do `fields.Function` for all of these and put them in `utils`
+    parent = fields.Method('dump_parent')
+    children = fields.Method('dump_children')
+    type = fields.Method('dump_type')
+    is_ordered = fields.Boolean()
+    is_parent = fields.Method('_is_parent')
+    is_child = fields.Method('_is_child')
+    is_last = fields.Method('dump_is_last')
+    is_first = fields.Method('dump_is_first')
+    index = fields.Method('dump_index')
+    next = fields.Method('dump_next')
+    previous = fields.Method('dump_previous')
+
+    def _dump_relative(self, relative):
+        if relative:
+            data, errors = PIDSchema().dump(relative)
+            return data
+        else:
+            return None
+
+    def dump_next(self, obj):
+        """Dump the parent of a PID."""
+        if self._is_child(obj):
+            return self._dump_relative(obj.next)
+
+    def dump_previous(self, obj):
+        """Dump the parent of a PID."""
+        if self._is_child(obj):
+            return self._dump_relative(obj.previous)
+
+    def dump_index(self, obj):
+        if obj.is_ordered and self._is_child(obj):
+            return obj.index
+        else:
+            return None
+
+    def _is_parent(self, obj):
+        return obj.parent == self.context['pid']
+
+    def _is_child(self, obj):
+        return obj.child == self.context['pid']
+
+    # @pre_dump
+    # def _prepare_relation_info(self, obj):
+    #     # Raise validation error (or maybe runtime?)
+    #     import ipdb; ipdb.set_trace()
+    #     siblings = PIDRelation.siblings(
+    #         self.context['pid'], self.__RELATION_TYPE__).all()
+    #     self.context['_siblings'] = siblings
+    #     assert 'pid' in self.context
+    #     return obj
+
+    def dump_is_last(self, obj):
+        if self._is_child(obj) and obj.is_ordered:
+            # TODO: This method exists in API
+            return obj.children.all()[-1] == self.context['pid']
+        else:
+            return None
+
+    def dump_is_first(self, obj):
+        if self._is_child(obj) and obj.is_ordered:
+            return obj.children.first() == self.context['pid']
+        else:
+            return None
+
+    def dump_type(self, obj):
+        mapping = \
+            current_app.config['PIDRELATIONS_RELATION_TYPES_SERIALIZED_NAMES']
+        return mapping[obj.relation_type]
+
+    def dump_parent(self, obj):
+        """Dump the parent of a PID."""
+        return self._dump_relative(obj.parent)
+
+    def dump_children(self, obj):
+        """Dump the siblings of a PID."""
+        data, errors = PIDSchema(many=True).dump(obj.children.all())
+        return data
+
+
+class PIDRelationsMixin(object):
+    relations = fields.Method('dump_relations')
+
+    def dump_relations(self, obj):
+        pid = self.context['pid']
+        child_relations = PIDRelation.get_child_relations(pid).all()
+        parent_relations = PIDRelation.get_parent_relations(pid).all()
+        all_relations = [PIDConcept(relation=rel) for rel in child_relations]
+        if parent_relations:
+            all_relations.append(PIDConcept(relation=parent_relations[0]))
+        schema = RelationSchema(many=True)
+        schema.context['pid'] = pid
+        data, errors = schema.dump(all_relations)
+        return data
 
     # NOTE: Maybe do `fields.Function` for all of these and put them in `utils`
     parent = fields.Method('dump_parent')

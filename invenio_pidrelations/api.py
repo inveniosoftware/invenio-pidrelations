@@ -73,6 +73,12 @@ class PIDConcept(object):
             PIDRelation.index))
 
     @property
+    def is_ordered(self):
+        """Determine if the concept is an ordered concept."""
+        return all(val is not None for val in self.children.with_entities(
+            PIDRelation.index))
+
+    @property
     def has_parents(self):
         """Determine if there are any parents in this relationship."""
         return self.parents.count() > 0

@@ -26,10 +26,11 @@
 
 from marshmallow import Schema
 
-from invenio_pidrelations.serializers.schemas import PIDRelationsMixin
+from invenio_pidrelations.serializers.schemas import RelationSchema, PIDRelationsMixin
+from invenio_pidrelations.models import PIDRelation
 
 
-class MyRecordSchema(Schema, PIDRelationsMixin):
+class SampleRecordSchema(Schema, PIDRelationsMixin):
     """Sample record schema."""
     pass
 

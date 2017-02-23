@@ -52,9 +52,9 @@ PIDRELATIONS_RELATION_TYPES_SERIALIZED_NAMES = \
     dict((v, k.lower()) for k, v in PIDRELATIONS_RELATION_TYPES2.items())
 """Serialized names of the relation types."""
 
-PIDRELATIONS_RELATION_TYPES_SERIALIZED_NAMES = \
-    dict((v, k.lower()) for k, v in PIDRELATIONS_RELATION_TYPES2.items())
-"""Serialized names of the relation types."""
+# PIDRELATIONS_RELATION_TYPES_SERIALIZED_NAMES = \
+#     dict((v, k.lower()) for k, v in PIDRELATIONS_RELATION_TYPES.items())
+# """Serialized names of the relation types."""
 
 PIDRELATIONS_RELATIONS_API = {
     0: 'invenio_pidrelations.api:PIDConceptOrdered',
@@ -67,3 +67,31 @@ PIDRELATIONS_PRIMARY_PID_TYPE = 'recid'
 
 PIDRELATIONS_INDEX_RELATIONS = True
 """Enable or disable relations indexing."""
+"""Serialized names of the relation types."""
+
+PIDRELATIONS_RELATIONS_API = {
+    'ORDERED': 'invenio_pidrelations.api:PIDConcept',
+    'UNORDERED': 'invenio_pidrelations.api:PIDConcept',
+    'VERSION': 'invenio_pidrelations.contrib.versioning:PIDVersioning',
+}
+
+# TODO: Remove after refactorinf
+# PIDRELATIONS_RELATION_TYPES = dict(
+#     VERSION=0,
+#     COLLECTION=1,
+#     RECORD_DRAFT=2,
+# )
+
+PIDRELATIONS_DEFAULT_VALUE = 'foobar'
+"""Default value for the application."""
+
+PIDRELATIONS_INDEXED_RELATIONS = dict(
+    recid=dict(
+        field='version',
+        api='invenio_pidrelations.contrib.versioning:PIDVersioning',
+        # FIXME: for now the API does not provide any way to know if a relation
+        # is ordered or not. Thus we write it here.
+        ordered=True,
+    )
+)
+"""Default PID fetcher."""
