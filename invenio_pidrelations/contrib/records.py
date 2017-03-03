@@ -76,7 +76,7 @@ def versioned_minter(pid_type='recid', object_type='rec', parent_minter=None):
             pid = child_minter(record_uuid, data)
 
             versioning = PIDVersioning(parent=parent_pid)
-            versioning.insert(pid, index=-1)
+            versioning.insert_child(child=pid)
             return pid
         return wrapper
     return decorator
@@ -98,30 +98,38 @@ class RecordDraft(object):
     """
 
     class _RecordDraft(PIDConcept):
-        """Internal class being used."""
+        """Internal class being used for API access."""
 
-        relation_type = LocalProxy(
-            lambda: current_pidrelations.relation_types['RECORD_DRAFT'])
+        def __init__(self, child=None, parent=None, relation=None):
+            RECORD_DRAFT = current_pidrelations.relation_types['RECORD_DRAFT']
+            self.relation_type = RECORD_DRAFT
+            if relation is not None:
+                assert relation.relation_type == RECORD_DRAFT
+                return super(RecordDraft._RecordDraft, self).__init__(relation=relation)
+            else:
+                return super(RecordDraft._RecordDraft, self).__init__(
+                    child=child, parent=parent, relation_type=RECORD_DRAFT,
+                    relation=relation)
 
     @classmethod
     def link(cls, recid, depid):
         """Link a recid and depid."""
-        return cls._RecordDraft(parent=recid, child=depid).create_relation()
+        return cls._RecordDraft(parent=recid).insert_child(depid)
 
     @classmethod
-    def unlink(cls, recid=None, depid=None):
+    def unlink(cls, recid, depid):
         """Unlink a recid and depid."""
-        return cls._RecordDraft(parent=recid, child=depid).destroy_relation()
+        return cls._RecordDraft(parent=recid).remove_child(depid)
 
     @classmethod
     def get_draft(cls, recid):
         """Get the draft of a record."""
-        return cls._RecordDraft.get_child(recid)
+        return cls._RecordDraft(parent=recid).last_child
 
     @classmethod
     def get_recid(cls, depid):
         """Get the recid of a record."""
-        return cls._RecordDraft.get_parent(depid)
+        return cls._RecordDraft(child=depid).parent
 
 
 def clone_record_files(src_record, dst_record):
@@ -138,9 +146,11 @@ def clone_record_files(src_record, dst_record):
 
 def index_siblings(pid, only_previous_version=False):
     """Send sibling records of the passed pid for indexing."""
-    siblings = (PIDVersioning(child=pid)
-                .children(child_status=(PIDStatus.REGISTERED,))
-                .all())
+    siblings = (
+        PIDVersioning(child=pid)
+        .children.filter(PersistentIdentifier.status == PIDStatus.REGISTERED)
+        .all()
+    )
     prev_ver = only_previous_version and siblings[-2:-2]
     if prev_ver:
         RecordIndexer().index_by_id(str(prev_ver.objec_uuid))

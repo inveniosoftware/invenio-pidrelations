@@ -50,11 +50,17 @@ class PIDVersioning(PIDConceptOrdered):
             if relation.relation_type != self.relation_type:
                 raise ValueError("Provided PID relation ({0}) is not a "
                                  "version relation.".format(relation))
-            return super(PIDVersioning, self).__init__(relation=relation)
+            super(PIDVersioning, self).__init__(relation=relation)
         else:
             return super(PIDVersioning, self).__init__(
                 child=child, parent=parent, relation_type=self.relation_type,
                 relation=relation)
+        if self.child:
+            self.relation = PIDRelation.query.filter(
+                PIDRelation.child_id == self.child.id,
+                PIDRelation.parent_id == self.parent.id,
+                PIDRelation.relation_type == self.relation_type,
+            ).one_or_none()
 
     def insert_child(self, child, index=-1):
         """Insert child into versioning scheme.
@@ -104,6 +110,40 @@ class PIDVersioning(PIDConceptOrdered):
     #     pass
 
 
+versioning_blueprint = Blueprint(
+    'invenio_pidrelations.versioning',
+    __name__,
+    template_folder='templates'
+)
+
+
+@versioning_blueprint.app_template_filter()
+def latest_pid_version(pid):
+    """Get last PID."""
+    return (PIDVersioning(child=pid).children
+            .filter(PersistentIdentifier.status == PIDStatus.REGISTERED)
+            .last())
+
+
+@versioning_blueprint.app_template_filter()
+def head_pid_version(pid):
+    """Get head PID of a PID."""
+    return PIDVersioning.get_parent(pid)
+
+
+@versioning_blueprint.app_template_test()
+def latest_version(pid):
+    """Determine if PID is the last version."""
+    return PIDVersioning.is_latest(pid)
+
+
+@versioning_blueprint.app_template_filter()
+def all_versions(pid):
+    """Get all versions of a PID."""
+    return PIDVersioning(pid).children()
+
+
 __all__ = (
     'PIDVersioning',
+    'versioning_blueprint'
 )

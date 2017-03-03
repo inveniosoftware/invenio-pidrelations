@@ -41,10 +41,18 @@ PIDRELATIONS_RELATION_TYPES = [
                  'invenio_pidrelations.serializers.schemas.RelationSchema'),
 ]
 
+PIDRELATION_RELATION_TYPE_TITLES = {
+    'ORDERED': 'Ordered',
+    'UNORDERED': 'Unordered',
+    'VERSION': 'Version',
+    'RECORD_DRAFT': 'Record Draft',
+}
+
 PIDRELATIONS_RELATION_TYPES2 = {
     'ORDERED': 0,
     'UNORDERED': 1,
     'VERSION': 2,
+    'RECORD_DRAFT': 3,
 }
 """Relation types definition."""
 
@@ -74,13 +82,6 @@ PIDRELATIONS_RELATIONS_API = {
     'UNORDERED': 'invenio_pidrelations.api:PIDConcept',
     'VERSION': 'invenio_pidrelations.contrib.versioning:PIDVersioning',
 }
-
-# TODO: Remove after refactorinf
-# PIDRELATIONS_RELATION_TYPES = dict(
-#     VERSION=0,
-#     COLLECTION=1,
-#     RECORD_DRAFT=2,
-# )
 
 PIDRELATIONS_DEFAULT_VALUE = 'foobar'
 """Default value for the application."""
