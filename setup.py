@@ -113,9 +113,6 @@ setup(
         'invenio_base.api_apps': [
             'invenio_pidrelations = invenio_pidrelations:InvenioPIDRelations',
         ],
-        'invenio_base.blueprints': [
-            'invenio_pidrelations = invenio_pidrelations.views:blueprint',
-        ],
         'invenio_db.models': [
             'invenio_pidrelations = invenio_pidrelations.models',
         ],

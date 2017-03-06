@@ -57,7 +57,7 @@ def resolve_relation_type_config(value):
     elif isinstance(value, int):
         obj = next(rt for rt in relation_types if rt.id == value)
     else:
-        raise ValueError("Provided value '{0}' does not resolve to anyof the "
+        raise ValueError("Provided value '{0}' does not resolve to any of the "
                          "configured relation types.")
     api_class = obj_or_import_string(obj.api)
     schema_class = obj_or_import_string(obj.schema)

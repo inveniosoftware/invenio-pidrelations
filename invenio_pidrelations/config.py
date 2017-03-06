@@ -39,6 +39,9 @@ PIDRELATIONS_RELATION_TYPES = [
     RelationType(2, 'version', 'Version',
                  'invenio_pidrelations.contrib.versioning:PIDVersioning',
                  'invenio_pidrelations.serializers.schemas.RelationSchema'),
+    RelationType(3, 'record_draft', 'Record Draft',
+                 'invenio_pidrelations.contrib.records:RecordDraft',
+                 'invenio_pidrelations.serializers.schemas.RelationSchema'),
 ]
 
 PIDRELATION_RELATION_TYPE_TITLES = {
@@ -68,6 +71,7 @@ PIDRELATIONS_RELATIONS_API = {
     0: 'invenio_pidrelations.api:PIDConceptOrdered',
     1: 'invenio_pidrelations.api:PIDConcept',
     2: 'invenio_pidrelations.contrib.versioning:PIDVersioning',
+    3: 'invenio_pidrelations.contrib.records:RecordDraft',
 }
 
 PIDRELATIONS_PRIMARY_PID_TYPE = 'recid'
