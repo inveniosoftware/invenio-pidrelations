@@ -66,6 +66,7 @@ class PIDRelation(db.Model, Timestamp):
     relation_type = db.Column(
         db.SmallInteger(),
         nullable=False)
+        # primary_key=True) # TODO: Does not need to be PK
     """Type of relation between the parent and child PIDs."""
 
     index = db.Column(db.Integer, nullable=True)

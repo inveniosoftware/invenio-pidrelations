@@ -24,14 +24,9 @@
 
 """PIDRelation JSON Schema for metadata."""
 
-from flask import current_app
-from marshmallow import Schema, fields, pre_dump
-from werkzeug.utils import cached_property
+from marshmallow import Schema, fields
 
-from invenio_pidrelations.api import PIDConcept
-from invenio_pidrelations.models import PIDRelation
-
-from ..utils import obj_or_import_string, resolve_relation_type_config
+from ..utils import resolve_relation_type_config
 from .utils import serialize_relations
 
 
@@ -92,7 +87,6 @@ class RelationSchema(Schema):
 
     def dump_is_last(self, obj):
         """Dump the boolean stating if the child in the relation is last.
-
         Dumps `None` for parent serialization.
         """
         if self._is_child(obj) and obj.is_ordered:
@@ -103,7 +97,6 @@ class RelationSchema(Schema):
 
     def dump_is_first(self, obj):
         """Dump the boolean stating if the child in the relation is first.
-
         Dumps `None` for parent serialization.
         """
         if self._is_child(obj) and obj.is_ordered:

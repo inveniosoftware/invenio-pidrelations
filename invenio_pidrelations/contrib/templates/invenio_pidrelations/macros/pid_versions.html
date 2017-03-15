@@ -1,0 +1,47 @@
+{# -*- coding: utf-8 -*-
+#
+# This file is part of Invenio.
+# Copyright (C) 2017 CERN.
+#
+# Invenio is free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# Invenio is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Invenio; if not, write to the
+# Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA 02111-1307, USA.
+#
+# In applying this license, CERN does not
+# waive the privileges and immunities granted to it by virtue of its status
+# as an Intergovernmental Organization or submit itself to any jurisdiction.
+-#}
+{%- macro pid_versions_dropdown(pid, pid_view='invenio_records_ui.recid') %}
+{%- set pid_versioning = pid | to_versioning_api -%}
+{% if pid_versioning.parent %}
+  {% set all_versions = pid_versioning.children | list %}
+  <div class="dropdown pid-versions-dropdown">
+    <ul class="dropdown-menu" aria-labelledby="pid-versions-dropdown">
+      {% for pid_version in all_versions | reverse | list %}
+        <li class="dropdown-item {{ 'latest' if loop.first else '' }} {{ 'current' if pid_version.id == pid.id else '' }}">
+          <a href="{{ url_for(pid_view, pid_value=pid_version.pid_value) }}">Version {{ loop.revindex }} {{ ' (latest)' if loop.first else '' }} </a>
+        </li>
+      {% endfor %}
+    </ul>
+    {% set pid_version_index = all_versions.index(pid) %}
+    {% set is_latest = all_versions[-1] == pid %}
+    <button class="btn btn-default dropdown-toggle" type="button" id="pid-versions-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      <div class="dropdown-head {{ 'latest' if is_latest else '' }}">
+        Version {{ pid_version_index + 1 }}{{ ' (latest)' if is_latest else '' }}
+        <span class="caret"></span>
+      </div>
+    </button>
+  </div>
+{% endif %}
+{%- endmacro %}

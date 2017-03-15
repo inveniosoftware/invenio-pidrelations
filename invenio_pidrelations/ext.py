@@ -47,6 +47,16 @@ class _InvenioPIDRelationsState(object):
     def primary_pid_type(self):
         return self.app.config.get('PIDRELATIONS_PRIMARY_PID_TYPE')
 
+    def indexed_relations(self):
+        """Load the configuration for indexed relations."""
+        indexed = self.app.config.get('PIDRELATIONS_INDEXED_RELATIONS')
+        if not indexed:
+            return {}
+        result = deepcopy(indexed)
+        for pid_value, conf in result.items():
+            conf.update(dict(api=obj_or_import_string(conf['api'])))
+        return result
+
 
 class InvenioPIDRelations(object):
     """Invenio-PIDRelations extension."""

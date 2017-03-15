@@ -51,8 +51,6 @@ from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.serializers.schemas import RelationSchema
 from invenio_pidrelations.utils import resolve_relation_type_config
 
-resolve_relation_type_config
-
 
 @pytest.yield_fixture()
 def instance_path():

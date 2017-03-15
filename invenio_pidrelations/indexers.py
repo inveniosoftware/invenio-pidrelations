@@ -42,4 +42,33 @@ def index_relations(sender, json=None, record=None, index=None, **kwargs):
         relations = serialize_relations(pid)
         if relations:
             json['relations'] = relations
+    # pids = (PersistentIdentifier.query
+    #         .filter(PersistentIdentifier.object_uuid == record.id)
+    #         .all())
+    # relations = {}
+    # if pids:
+    #     for pid in pids:
+    #         indexed = current_pidrelations.indexed_relations.get(pid.pid_type)
+    #         if indexed:
+    #             api_cls = indexed['api']
+    #             api = api_cls(child=pid)
+    #             if indexed.get('ordered', False):
+    #                 relation = dict(
+    #                     parent=api.parent.pid_value,
+    #                     order=api.relation.index,
+    #                     is_latest=api.is_last_child,
+    #                     # siblings=[p.pid_value
+    #                     #           for p in api.get_all_versions(pid)],
+    #                     # FIXME: if siblings is ordered we don't need "last"
+    #                     # and "order" fields. Otherwise we do. Also B2Share
+    #                     # will probably not use "siblings". We need to be able
+    #                     # to choose the fields we want to index.
+    #                 )
+    #             else:
+    #                 relation = dict(
+    #                     parent=api.parent.pid_value,
+    #                 )
+    #             relations[indexed['field']] = relation
+    # if relations:
+    #     json['relations'] = relations
     return json
