@@ -24,6 +24,9 @@
 
 """Minimal Flask application example.
 
+Note that Microsoft Edge and Internet Explorer don't display this example
+properly.
+
 First install Invenio-PIDRelations, setup the application and load
 fixture data by running:
 
@@ -46,6 +49,13 @@ and open the example application in your browser:
 .. code-block:: console
 
     $ open http://127.0.0.1:5000/
+
+This example lets you create dummy records and link them as "versions" of
+a same parent Persistent Identifier (also named PID). The left panel list all
+the parent PIDs with their "child" versions.
+
+The output of a serialized relation is also visible by clicking on any of the
+versions.
 
 To reset the example application run:
 
@@ -95,7 +105,12 @@ record_resolver = Resolver(
 
 
 class SimpleRecordSchema(Schema, PIDRelationsMixin):
-    """Tiny schema for our simple record."""
+    """Tiny schema for our simple record.
+
+    This serializer also serializes the relations as it inherits
+    PIDRelationsMixin. The result can be seen in the view by clicking on a
+    version of a record.
+    """
 
     recid = fields.Str()
     title = fields.Str()

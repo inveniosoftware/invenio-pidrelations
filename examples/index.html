@@ -73,7 +73,16 @@ body {
             {% set pid_versioning = head | to_versioning_api(child=False) %}
             {% for child in pid_versioning.children %}
               {% set record = child | to_record %}
-              <li>[{{ child.pid_value }}] - {{ record['title'] }} <br/> <small>{{ record['body'] }}</small></li>
+              <li>
+                  <details>
+                      <summary>
+                          [{{ child.pid_value }}] - {{ record['title'] }} <br/> <small>{{ record['body'] }}</small>
+                      </summary>
+                      <!-- Show what output of our serializer looks like -->
+                      <b>Serialized record:</b>
+                      <p style="white-space: pre-wrap; margin: 0px;">{{ record|tojson(indent=4)|safe}}</p>
+                  </details>
+              </li>
             {% endfor %}
             </ul>
           </li>
