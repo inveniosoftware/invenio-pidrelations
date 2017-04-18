@@ -32,210 +32,150 @@ from sqlalchemy.exc import IntegrityError
 
 from .models import PIDRelation
 from .utils import resolve_relation_type_config
+from .errors import RelationConflictError, RelationNotFoundError
 
 
 class PIDConcept(object):
-    """API for PID version relations."""
+    """API for PID concepts.
 
-    def __init__(self, child=None, parent=None, relation_type=None,
-                 relation=None):
-        """Create a PID concept API object."""
-        if relation:
-            self.relation = relation
-            self.child = relation.child
-            self.parent = relation.parent
-            self.relation_type = relation.relation_type
-        else:
-            self.child = child
-            self.parent = parent
-            self.relation_type = relation_type
-            # If child and parent (primary keys) are not None,
-            # try to set the relation
-            if child and parent:
-                self.relation = PIDRelation.query.get(
-                    (self.parent.id, self.child.id))
-            else:
-                self.relation = None
+    A PID concept is a tree of depth 1 with a single parent PID and one or more
+    children PIDs linked together by relations of one single type.
 
-    @property
-    def parents(self):
-        """Return the PID parents for given relation."""
-        filter_cond = [PIDRelation.child_id == self.child.id, ]
-        if self.relation_type:
-            filter_cond.append(PIDRelation.relation_type == self.relation_type)
+    A child PID can be part of multiple concepts, i.e. having multiple parents.
+    The concept is defined by the parent PID and the relation type.
+
+    Subclasses are allowed to extend this by adding multiple relation
+    types but the additional relations should be accessed with custom methods.
+    The definition of "children" should not change.
+    """
+
+    def __init__(self, parent=None, relation_type=None):
+        """Create a PID concept API object.
+
+        :param parent: parent PID of this concept.
+        :param relation_type: type of the relations which link the parent PID
+            to its children.
+        """
+        self.parent = parent
+        self.relation_type = relation_type
+
+    @classmethod
+    def get(cls, parent=None, child=None, relation=None):
+        """Retrieve a PIDConcept.
+
+        Parameters parent and child or relation must be provided.
+
+        :param parent: parent PID, ignored if relation is set.
+        :param child: child PID, ignored if relation is set.
+        :param relation: relation which is part of this PIDConcept. It's
+            parent PID and relation_type will be used.
+        :type relation: :py:class:`.models.PIDRelation`
+
+        :returns: a PIDConcept or None if no relation is found between parent
+            and child PIDs.
+        """
+        if not (parent or child) and not relation:
+            raise ValueError('Retrieving a PIDConcept requires an existing'
+                             'parent and child PID or a relation')
+        if not relation:
+            relation = PIDRelation.query.get(parent.id, child.id).one_or_none()
+        if relation is None:
+            return None
+        return cls(parent=relation.parent,
+                   relation_type=relation.relation_type)
+
+    def get_children(self):
+        """Get all children of the parent.
+
+        :returns: an SQLAlchemy query which queries for all children PIDs.
+        """
         return db.session.query(PersistentIdentifier).join(
             PIDRelation,
-            PIDRelation.parent_id == PersistentIdentifier.id
-        ).filter(*filter_cond)
-
-    @property
-    def exists(self):
-        """Determine if a PID Concept exists.
-
-        Determine if constructed API object describes an existing PID Concept.
-        The definition of that will vary across different PID Concepts, but
-        it's intended use is to check if given child/parent PIDs are in
-        the described relation.
-        """
-
-        return bool(self.relation)
-
-    @property
-    def is_ordered(self):
-        """Determine if the concept is an ordered concept."""
-        return all(val is not None for val in self.children.with_entities(
-            PIDRelation.index))
-
-    @property
-    def has_parents(self):
-        """Determine if there are any parents in this relationship."""
-        return self.parents.count() > 0
-
-    @property
-    def parent(self):
-        """Return the parent of the PID in given relation.
-
-        NOTE: Not supporting relations, which allow for multiple parents,
-              e.g. Collection.
-
-        None if not found
-        Raises 'sqlalchemy.orm.exc.MultipleResultsFound' for multiple parents.
-        """
-        if self._parent is None:
-            parent = self.parents.one_or_none()
-            self._parent = parent
-        return self._parent
-
-    @parent.setter
-    def parent(self, parent):
-        self._parent = parent
-
-    @property
-    def is_parent(self):
-        """Determine if the provided parent is a parent in the relation."""
-        return self.has_children
-
-    def get_children(self, ordered=False, pid_status=None):
-        """Get all children of the parent."""
-        filter_cond = [PIDRelation.parent_id == self.parent.id, ]
-        if pid_status is not None:
-            filter_cond.append(PersistentIdentifier.status == pid_status)
-        if self.relation_type:
-            filter_cond.append(PIDRelation.relation_type == self.relation_type)
-
-        q = db.session.query(PersistentIdentifier).join(
-            PIDRelation,
             PIDRelation.child_id == PersistentIdentifier.id
-        ).filter(*filter_cond)
-        if ordered:
-            return q.order_by(PIDRelation.index.asc())
-        else:
-            return q
-
-    @property
-    def index(self):
-        """Index of the child in the relation."""
-        return self.relation.index
-
-    @property
-    def children(self):
-        """Children of the parent."""
-        return self.get_children()
+        ).filter(PIDRelation.parent_id == self.parent.id,
+                 PIDRelation.relation_type == self.relation_type)
 
     @property
     def has_children(self):
-        """Determine if there are any children in this relationship."""
-        return self.children.count() > 0
+        """Determine if there are any children in this concept."""
+        return self.get_children().count() > 0
 
-    @property
-    def is_last_child(self):
+    def has_child(pid):
+        """Check if the provided PID is a child of this concept.
+
+        :returns: True if the given PID is a child in this concept,
+            else False.
         """
-        Determine if 'pid' is the latest version of a resource.
+        return PIDRelation.query.get(self.parent.id, pid).exists()
 
-        Resolves True for Versioned PIDs which are the oldest of its siblings.
-        False otherwise, also for Head PIDs.
+    def add_child(self, child):
+        """Add a new child into a PID concept."""
+        try:
+            with db.session.begin_nested():
+                return PIDRelation.create(
+                    self.parent, child, self.relation_type, None)
+        except IntegrityError:
+            raise RelationConflictError("PID Relation already exists.")
+
+    def remove_child(self, child):
+        """Remove a child from a PID concept."""
+        with db.session.begin_nested():
+            relation = PIDRelation.query.filter_by(
+                parent_id=self.parent.id,
+                child_id=child.id,
+                relation_type=self.relation_type).one()
+            db.session.delete(relation)
+            # FIXME: raise RelationNotFoundError if delete fails
+
+
+class PIDConceptOrdered(PIDConcept):
+    """Standard PID Concept with children ordering."""
+
+    def get_children(self, order=None):
+        """Get all children of the parent.
+
+        :param order: "asc" if the query should be sorted in ascending order,
+            "desc" if the ordering should be descending, None for no ordering.
         """
-        last_child = self.last_child
-        if last_child is None:
-            return False
-        return last_child == self.child
+        q = super(PIDConceptOrdered, self).__init__()
+        if order is not None:
+            if order == 'asc':
+                return q.order_by(PIDRelation.index.asc())
+            else:
+                return q.order_by(PIDRelation.index.desc())
+        return q
 
-    @property
-    def last_child(self):
-        """
-        Get the latest PID as pointed by the Head PID.
+    def add_child(self, child, index=-1):
+        """Link a PID as a child to this concept's parent.
 
-        If the 'pid' is a Head PID, return the latest of its children.
-        If the 'pid' is a Version PID, return the latest of its siblings.
-        Return None for the non-versioned PIDs.
-        """
-        return self.get_children(ordered=False).filter(
-            PIDRelation.index.isnot(None)).order_by(
-                PIDRelation.index.desc()).first()
-
-    @property
-    def next(self):
-        """Get the next sibling in the PID relation."""
-        if self.relation.index is not None:
-            return self.children.filter_by(
-                index=self.relation.index + 1).one_or_none()
-        else:
-            return None
-
-    @property
-    def previous(self):
-        """Get the previous sibling in the PID relation."""
-        if self.relation.index is not None:
-            return self.children.filter_by(
-                index=self.relation.index - 1).one_or_none()
-        else:
-            return None
-
-    @property
-    def is_child(self):
-        """
-        Determine if 'pid' is a Version PID.
-
-        Resolves as True for any PID which has a Head PID, False otherwise.
-        """
-        return self.has_parents
-
-    def insert_child(self, child, index=None):
-        """Insert a new child into a PID concept.
-
-        Argument 'index' can take the following values:
-            0,1,2,... - insert child PID at the specified position
-            -1 - insert the child PID at the last position
-            None - insert child without order (no re-ordering is done)
-
-            NOTE: If 'index' is specified, all sibling relations should
-                  have PIDRelation.index information.
-
+        :param child: PID for which a new relation will be created.
+        :param index: valuse in [0:n] will insert child PID at the specified
+          position, -1 will insert the child PID at the last position, None
+          will insert child without order (no re-ordering is done).
         """
         try:
             with db.session.begin_nested():
-                if index is not None:
-                    child_relations = self.parent.child_relations.filter(
-                        PIDRelation.relation_type ==
-                        self.relation_type).order_by(PIDRelation.index).all()
-                    relation_obj = PIDRelation.create(
-                        self.parent, child, self.relation_type, None)
-                    if index == -1:
-                        child_relations.append(relation_obj)
-                    else:
-                        child_relations.insert(index, relation_obj)
-                    for idx, c in enumerate(child_relations):
-                        c.index = idx
+                child_relations = self.parent.child_relations.filter(
+                    PIDRelation.relation_type ==
+                    self.relation_type).order_by(PIDRelation.index).all()
+                relation_obj = PIDRelation.create(
+                    self.parent, child, self.relation_type, None)
+                if index == -1:
+                    child_relations.append(relation_obj)
                 else:
-                    relation_obj = PIDRelation.create(
-                        self.parent, child, self.relation_type, None)
-            # TODO: self.child = child
-            # TODO: mark 'children' cached_property as dirty
+                    child_relations.insert(index, relation_obj)
+                for idx, c in enumerate(child_relations):
+                    c.index = idx
         except IntegrityError:
-            raise Exception("PID Relation already exists.")
+            raise RelationConflictError("PID Relation already exists.")
 
     def remove_child(self, child, reorder=False):
-        """Remove a child from a PID concept."""
+        """Remove the relation linking a child PID to this concept's parent.
+
+        :param child: PID whose relation will be removed.
+        :param reorder: enable reordering of siblings by decrementing the
+            index of every following relation.
+        """
         with db.session.begin_nested():
             relation = PIDRelation.query.filter_by(
                 parent_id=self.parent.id,
@@ -248,23 +188,77 @@ class PIDConcept(object):
                         PIDRelation.index).all()
                 for idx, c in enumerate(child_relations):
                     c.index = idx
-        # TODO: self.child = None
-        # TODO: mark 'children' cached_property as dirty
-
-
-class PIDConceptOrdered(PIDConcept):
-    """Standard PID Concept with childred ordering."""
 
     @property
-    def children(self):
-        """Overwrite the children property to always return them ordered."""
-        return self.get_children(ordered=True)
+    def index_of(self, pid):
+        """Index of the child in this concept.
+
+        :param pid: a child PID.
+
+        :returns: index of the given PID.
+        """
+        relation = PIDRelation.query.get(self.parent.id, pid.id).one_or_none()
+        if relation is None or relation.relation_type != self.relation_type:
+            raise RelationNotFoundError(
+                'No relation of type {0} between {1} as parent PID and {2} '
+                'as child PID'.format(self.relation_type, self.parent.id,
+                                      pid.id)
+            )
+        return relation.index
+
+    def get_child(index):
+        """Retrieve the child at the given index.
+
+        :param index: index of the retrieved child PID in this concept.
+        :type index: int
+
+        :returns: the child PID, None if no relation matches this index.
+        """
+        return self.get_children().filter(
+            PIDRelation.index == index).one_or_none()
 
     @property
-    def is_ordered(self):
-        """Determine if the concept is an ordered concept."""
-        return True
+    def is_last_child(self, pid):
+        """Determine if 'pid' is the latest child of this PIDConcept.
 
+        :param pid: a child PID.
+
+        :returns: True if the given PID has the highest index in this
+            concept, False otherwise.
+        """
+        return self.last_child() == pid
+
+    @property
+    def last_child(self):
+        """Get the child PID with the highest index.
+
+        :returns: the last child PID. None there are no children PIDs.
+        """
+        return self.get_children(order='desc').first()
+
+    @property
+    def next(self, pid):
+        """Get the next sibling in the PID relation.
+
+        :param pid: child PID whose next sibling will be returned.
+
+        :returns: PID whose index follows the one provided in this concept.
+            None if there is no such PID.
+        """
+        index = self.index_of(pid)
+        return self.get_child(index + 1)
+
+    @property
+    def previous(self, pid):
+        """Get the previous sibling in the PID relation.
+
+        :param pid: child PID whose previous sibling will be returned.
+
+        :returns: PID whose index precedes the one provided in this concept.
+            None if there is no such PID.
+        """
+        index = self.index_of(pid)
+        return self.get_child(index - 1)
 
 __all__ = (
     'PIDConcept',

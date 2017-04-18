@@ -39,30 +39,31 @@ class PIDVersioning(PIDConceptOrdered):
     """API for PID versioning relations.
 
     - Adds automatic redirection handling for Parent-LastChild
-    - Sets stricter method signatures, e.g.: 'index' is mandatory parameter
-        when calling 'insert'.
     """
 
-    def __init__(self, child=None, parent=None, draft_deposit=None,
-                 draft_record=None, relation=None):
-        """Create a PID versioning API."""
-        self.relation_type = resolve_relation_type_config('version').id
-        if relation is not None:
-            if relation.relation_type != self.relation_type:
-                raise ValueError("Provided PID relation ({0}) is not a "
-                                 "version relation.".format(relation))
-            super(PIDVersioning, self).__init__(relation=relation)
-        else:
-            super(PIDVersioning, self).__init__(
-                child=child, parent=parent, relation_type=self.relation_type,
-                relation=relation)
-        if self.child:
-            self.relation = PIDRelation.query.filter(
-                PIDRelation.child_id == self.child.id,
-                PIDRelation.relation_type == self.relation_type,
-            ).one_or_none()
+    @classmethod
+    def get(cls, child=None, relation=None):
+        """Retrieve a PIDConcept.
 
-    def insert_child(self, child, index=-1):
+        One of those parameters must be provided: parent or child or relation.
+
+        :param child: child PID.
+        :param relation: relation which is part of this PIDConcept. It's
+            parent PID and relation_type will be used. Ignored if child is
+            given.
+        :type relation: :py:class:`.models.PIDRelation`
+
+        :returns: a PIDVersioning or None if no version relation is linked
+            to the child PIDs.
+        """
+        if child:
+            # TODO: retrieve the single possible version relation linking
+            # the child PID
+            pass
+        else:
+            return PIDConceptOrdered.get(relation=relation)
+
+    def add_child(self, child, index=-1):
         """Insert child into versioning scheme.
 
         Parameter 'index' is has to be an integer.
@@ -95,37 +96,20 @@ class PIDVersioning(PIDConceptOrdered):
             #     self.parent.unassign()
             #     self.parent.delete()  # TODO: Deleting redirection
 
-    def create_parent(self, pid_value, status=PIDStatus.REGISTERED,
-                      redirect=True):
-        """Create a parent PID from a child and create a new PID versioning."""
-        if self.has_parents:
-            raise Exception("Parent already exists for this child.")
-        self.parent = PersistentIdentifier.create(
-            self.child.pid_type, pid_value,
-            object_type=self.child.object_type,
-            status=status)
-        self.relation = PIDRelation.create(
-            self.parent, self.child, self.relation_type, 0)
-        if redirect:
-            self.parent.redirect(self.child)
+    # def create_parent(self, pid_value, status=PIDStatus.REGISTERED,
+    #                   redirect=True):
+    #     """Create a parent PID from a child and create a new PID versioning."""
+    #     if self.has_parents:
+    #         raise Exception("Parent already exists for this child.")
+    #     self.parent = PersistentIdentifier.create(
+    #         self.child.pid_type, pid_value,
+    #         object_type=self.child.object_type,
+    #         status=status)
+    #     self.relation = PIDRelation.create(
+    #         self.parent, self.child, self.relation_type, 0)
+    #     if redirect:
+    #         self.parent.redirect(self.child)
 
-    @property
-    def exists(self):
-        return self.parent is not None
-
-    @property
-    def last_child(self):
-        """
-        Get the latest PID as pointed by the Head PID.
-
-        If the 'pid' is a Head PID, return the latest of its children.
-        If the 'pid' is a Version PID, return the latest of its siblings.
-        Return None for the non-versioned PIDs.
-        """
-        return self.get_children(ordered=False,
-                                 pid_status=PIDStatus.REGISTERED).filter(
-                PIDRelation.index.isnot(None)).order_by(
-                    PIDRelation.index.desc()).first()
 
     @property
     def draft_child(self):
@@ -146,10 +130,12 @@ class PIDVersioning(PIDConceptOrdered):
         else:
             return None
 
-    def insert_draft_child(self, child):
+    def add_draft_child(self, child):
         if not self.draft_child:
-            with db.session.begin_nested():
-                super(PIDVersioning, self).insert_child(child, index=-1)
+            # FIXME: reimplement without using children
+            pass
+            # with db.session.begin_nested():
+            #     super(PIDVersioning, self).insert_child(child, index=-1)
         else:
             raise Exception(
                 "Draft child already exists for this relation: {0}".format(
@@ -157,9 +143,11 @@ class PIDVersioning(PIDConceptOrdered):
 
     def remove_draft_child(self):
         if self.draft_child:
-            with db.session.begin_nested():
-                super(PIDVersioning, self).remove_child(self.draft_child,
-                                                        reorder=True)
+            # FIXME: reimplement without using children
+            pass
+            # with db.session.begin_nested():
+            #     super(PIDVersioning, self).remove_child(self.draft_child,
+            #                                             reorder=True)
 
     def update_redirect(self):
         if self.last_child:
