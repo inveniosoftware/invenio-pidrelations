@@ -33,6 +33,24 @@ from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.utils import resolve_relation_type_config
 
 
+def test_api(app, db):
+    from invenio_pidstore.providers.recordid import RecordIdProvider
+    def create_pid(value):
+        return PersistentIdentifier.create(
+            'recid', value, object_type='rec', status=PIDStatus.REGISTERED)
+    parent_pid = create_pid(0)
+    versioning = PIDVersioning(parent=parent_pid)
+    for pid_value in range(1, 10):
+        version_pid = create_pid(pid_value)
+        versioning.insert_child(child=version_pid)
+
+    pvers = PIDVersioning(parent=parent_pid)
+    cvers = PIDVersioning(child=version_pid)
+    rvers = PIDVersioning(child=version_pid, parent=parent_pid)
+
+    import ipdb
+    ipdb.set_trace()
+
 def test_version_pids_create(app, db):
 
     # Create a child, initialize the Versioning API and create a parent
