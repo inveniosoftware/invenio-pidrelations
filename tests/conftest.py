@@ -43,7 +43,8 @@ from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 from invenio_records import InvenioRecords, Record
 from invenio_search import InvenioSearch, current_search, current_search_client
 from marshmallow import fields
-from sqlalchemy_utils.functions import create_database, database_exists
+from sqlalchemy_utils.functions import create_database, database_exists, \
+    drop_database
 
 from invenio_pidrelations import InvenioPIDRelations
 from invenio_pidrelations.config import RelationType
@@ -105,12 +106,17 @@ def es(app):
 @pytest.yield_fixture()
 def db(app):
     """Database fixture."""
-    if not database_exists(str(db_.engine.url)):
-        create_database(str(db_.engine.url))
+    if database_exists(str(db_.engine.url)):
+        db_.session.remove()
+        drop_database(str(db_.engine.url))
+    create_database(str(db_.engine.url))
     db_.create_all()
     yield db_
     db_.session.remove()
-    db_.drop_all()
+    drop_database(db_.engine.url)
+    # Dispose the engine in order to close all connections. This is
+    # needed for sqlite in memory databases.
+    db_.engine.dispose()
 
 
 @pytest.fixture()
