@@ -48,18 +48,27 @@ extras_require = {
     ],
     'tests': tests_require,
     'mysql': [
-        'invenio-db[mysql]>=1.0.0b1',
+        'invenio-db[mysql,versioning]>=1.0.0b3',
     ],
     'postgresql': [
-        'invenio-db[postgresql]>=1.0.0b1',
+        'invenio-db[postgresql,versioning]>=1.0.0b3',
     ],
     'sqlite': [
-        'invenio-db>=1.0.0b1',
+        'invenio-db[versioning]>=1.0.0b3',
     ],
     'records': [
         'invenio-deposit>=1.0.0a7',
-        'invenio-records-files>=1.0.0a8',
         'invenio-records>=1.0.0b1',
+        # FIXME: Added because requirements-builder does not search
+        # recursively lowest dependencies.
+        'invenio-records-ui>=1.0.0a8',
+        'invenio-records-rest>=1.0.0a17',
+        'invenio-accounts>=1.0.0b5',
+        'Flask-WTF>=0.13.1',
+        # Needed in order to have correct alembic upgrade.
+        'invenio-oauth2server>=1.0.0a14',
+        'invenio-records-files>=1.0.0a9',
+        'invenio-files-rest>=1.0.0a15',
     ],
     'indexer': [
         'invenio-indexer>=1.0.0a9',
@@ -67,7 +76,9 @@ extras_require = {
 }
 
 extras_require['all'] = []
-for reqs in extras_require.values():
+for name, reqs in extras_require.items():
+    if name in ('mysql', 'postgresql', 'sqlite'):
+        continue
     extras_require['all'].extend(reqs)
 
 setup_requires = [
@@ -113,6 +124,9 @@ setup(
         ],
         'invenio_base.api_apps': [
             'invenio_pidrelations = invenio_pidrelations:InvenioPIDRelations',
+        ],
+        'invenio_db.alembic': [
+            'invenio_pidrelations = invenio_pidrelations:alembic',
         ],
         'invenio_db.models': [
             'invenio_pidrelations = invenio_pidrelations.models',
