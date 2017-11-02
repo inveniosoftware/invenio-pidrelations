@@ -1,8 +1,8 @@
 ===============================
- Invenio-PIDRelations v1.0.0a3
+ Invenio-PIDRelations v1.0.0a4
 ===============================
 
-Invenio-PIDRelations v1.0.0a3 was released on May 18, 2017.
+Invenio-PIDRelations v1.0.0a4 was released on November 2, 2017.
 
 About
 -----
@@ -19,7 +19,7 @@ What's new
 Installation
 ------------
 
-   $ pip install invenio-pidrelations==1.0.0a3
+   $ pip install invenio-pidrelations==1.0.0a4
 
 Documentation
 -------------
