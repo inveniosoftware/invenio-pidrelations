@@ -26,6 +26,7 @@
 
 from __future__ import absolute_import, print_function
 
+from werkzeug.utils import cached_property
 from flask_sqlalchemy import BaseQuery
 from invenio_db import db
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
@@ -89,6 +90,12 @@ class PIDNode(object):
         self.relation_type = relation_type
         self.pid = pid
 
+    @cached_property
+    def _resolved_pid(self):
+        if not isinstance(self.pid, PersistentIdentifier):
+            return resolve_pid(self.pid)
+        return self.pid
+
     def _connected_pids(self, from_parent=True):
         """Follow a relationship to find connected PIDs.abs.
 
@@ -145,31 +152,26 @@ class PIDNode(object):
         """Test if the given PID has any parents."""
         return db.session.query(self.parents.exists()).scalar()
 
-    def insert_child(self, pid):
+    def insert_child(self, child_pid):
         """Add the given PID to the list of children PIDs."""
         try:
-            # Here add the check for the max parents and the max children
+            # TODO: Here add the check for the max parents and the max children
             with db.session.begin_nested():
-                if not isinstance(pid, PersistentIdentifier):
-                    pid = resolve_pid(pid)
-                if not isinstance(self.pid, PersistentIdentifier):
-                    self.pid = resolve_pid(self.pid)
+                if not isinstance(child_pid, PersistentIdentifier):
+                    child_pid = resolve_pid(child_pid)
                 return PIDRelation.create(
-                    self.pid, pid, self.relation_type.id, None
+                    self._resolved_pid, child_pid, self.relation_type.id, None
                 )
         except IntegrityError:
             raise Exception("PID Relation already exists.")
 
-    def remove_child(self, child_pid, reorder=False):
+    def remove_child(self, child_pid):
         """Remove a child from a PID concept."""
         with db.session.begin_nested():
             if not isinstance(child_pid, PersistentIdentifier):
                 child_pid = resolve_pid(child_pid)
-            if not isinstance(self.pid, PersistentIdentifier):
-                self.pid = resolve_pid(self.pid)
-            # use PIDQuery here
             relation = PIDRelation.query.filter_by(
-                parent=self.pid,
+                parent=self._resolved_pid,
                 child=child_pid,
                 relation_type=self.relation_type.id).one()
             db.session.delete(relation)
@@ -182,21 +184,18 @@ class PIDNodeOrdered(PIDNode):
     relation_type.
     """
 
-    def __init__(self, pid, relation_type):
-        """Constructor."""
-        super(PIDNode, self).__init__()
-        self.relation_type = relation_type
-        self.pid = pid
-
-    @property
-    def index(self, pid):
+    def index(self, child_pid):
         """Index of the child in the relation."""
-        import ipdb
-        ipdb.set_trace()
-        return self.relation.index
+        if not isinstance(child_pid, PersistentIdentifier):
+            child_pid = resolve_pid(child_pid)
+        relation = PIDRelation.query.filter_by(
+            parent=self._resolved_pid,
+            child=child_pid,
+            relation_type=self.relation_type.id).one()
+        return relation.index
 
     @property
-    def is_last_child(pid):
+    def is_last_child(self, child_pid):
         """
         Determine if 'pid' is the latest version of a resource.
 
@@ -206,7 +205,7 @@ class PIDNodeOrdered(PIDNode):
         last_child = self.last_child
         if last_child is None:
             return False
-        return last_child == self.child
+        return last_child == child_pid
 
     @property
     def last_child(self):
@@ -217,9 +216,8 @@ class PIDNodeOrdered(PIDNode):
         If the 'pid' is a Version PID, return the latest of its siblings.
         Return None for the non-versioned PIDs.
         """
-        return self.get_children(ordered=False).filter(
-            PIDRelation.index.isnot(None)).order_by(
-                PIDRelation.index.desc()).first()
+        return self.children.filter(
+            PIDRelation.index.isnot(None)).ordered().first()
 
     @property
     def next_child(self):
@@ -230,10 +228,11 @@ class PIDNodeOrdered(PIDNode):
         else:
             return None
 
+    @property
     def previous_child(self):
         pass
 
-    def insert_child(self, child, index=None):
+    def insert_child(self, child_pid, index=-1):
         """Insert a new child into a PID concept.
 
         Argument 'index' can take the following values:
@@ -245,36 +244,35 @@ class PIDNodeOrdered(PIDNode):
                   have PIDRelation.index information.
 
         """
+        if index is None:
+            index = -1
         try:
             with db.session.begin_nested():
-                if index is not None:
-                    child_relations = self.parent.child_relations.filter(
-                        PIDRelation.relation_type ==
-                        self.relation_type).order_by(PIDRelation.index).all()
-                    relation_obj = PIDRelation.create(
-                        self.parent, child, self.relation_type, None)
-                    if index == -1:
-                        child_relations.append(relation_obj)
-                    else:
-                        child_relations.insert(index, relation_obj)
-                    for idx, c in enumerate(child_relations):
-                        c.index = idx
+                if not isinstance(child_pid, PersistentIdentifier):
+                    child_pid = resolve_pid(child_pid)
+                child_relations = self._resolved_pid.child_relations.filter(
+                    PIDRelation.relation_type == self.relation_type.id
+                ).order_by(PIDRelation.index).all()
+                relation_obj = PIDRelation.create(
+                    self._resolved_pid, child_pid, self.relation_type.id, None)
+                if index == -1:
+                    child_relations.append(relation_obj)
                 else:
-                    relation_obj = PIDRelation.create(
-                        self.parent, child, self.relation_type, None)
+                    child_relations.insert(index, relation_obj)
+                for idx, c in enumerate(child_relations):
+                    c.index = idx
         except IntegrityError:
             raise Exception("PID Relation already exists.")
 
-    def remove_child(self, child):
-        """."""
-        # this needs rework
-        # if reorder:
-        #     child_relations = self.parent.child_relations.filter(
-        #         PIDRelation.relation_type == self.relation_type).order_by(
-        #             PIDRelation.index).all()
-        #     for idx, c in enumerate(child_relations):
-        #         c.index = idx
-        pass
+    def remove_child(self, child_pid):
+        """Remove a child from a PID concept."""
+        super(PIDNodeOrdered, self).remove_child(child_pid)
+        child_relations = self._resolved_pid.child_relations.filter(
+            PIDRelation.relation_type == self.relation_type.id).order_by(
+                PIDRelation.index).all()
+        for idx, c in enumerate(child_relations):
+            c.index = idx
+
 
 class PIDConcept(object):
     """API for PID version relations."""
@@ -436,48 +434,16 @@ class PIDConcept(object):
         """
         return self.has_parents
 
-    def insert_child(self, child, index=None):
-        """Insert a new child into a PID concept.
-
-        Argument 'index' can take the following values:
-            0,1,2,... - insert child PID at the specified position
-            -1 - insert the child PID at the last position
-            None - insert child without order (no re-ordering is done)
-
-            NOTE: If 'index' is specified, all sibling relations should
-                  have PIDRelation.index information.
-
-        """
-        try:
-            with db.session.begin_nested():
-                if index is not None:
-                    child_relations = self.parent.child_relations.filter(
-                        PIDRelation.relation_type ==
-                        self.relation_type).order_by(PIDRelation.index).all()
-                    relation_obj = PIDRelation.create(
-                        self.parent, child, self.relation_type, None)
-                    if index == -1:
-                        child_relations.append(relation_obj)
-                    else:
-                        child_relations.insert(index, relation_obj)
-                    for idx, c in enumerate(child_relations):
-                        c.index = idx
-                else:
-                    relation_obj = PIDRelation.create(
-                        self.parent, child, self.relation_type, None)
-        except IntegrityError:
-            raise Exception("PID Relation already exists.")
-
     def remove_child(self, child, reorder=False):
         """Remove a child from a PID concept."""
         with db.session.begin_nested():
             relation = PIDRelation.query.filter_by(
-                parent_id=self.parent.id,
+                parent_id=self.pid.id,
                 child_id=child.id,
                 relation_type=self.relation_type).one()
             db.session.delete(relation)
             if reorder:
-                child_relations = self.parent.child_relations.filter(
+                child_relations = self.pid.child_relations.filter(
                     PIDRelation.relation_type == self.relation_type).order_by(
                         PIDRelation.index).all()
                 for idx, c in enumerate(child_relations):
