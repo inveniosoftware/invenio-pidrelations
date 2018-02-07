@@ -25,10 +25,11 @@
 """api query tests."""
 
 import pytest
-from invenio_pidrelations.api import PIDQuery
-from invenio_pidrelations.models import PIDRelation
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 from sqlalchemy.orm import aliased
+
+from invenio_pidrelations.api import PIDQuery
+from invenio_pidrelations.models import PIDRelation
 
 
 @pytest.mark.parametrize("order, sort", [

@@ -52,7 +52,7 @@ class PIDRelation(db.Model, Timestamp):
                       ondelete="CASCADE"),
         nullable=False,
         primary_key=True,
-        )
+    )
     """Parent PID of the relation."""
 
     child_id = db.Column(

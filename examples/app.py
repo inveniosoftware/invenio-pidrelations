@@ -120,8 +120,6 @@ def create():
 
 @app.template_filter()
 def to_record(pid):
-    import ipdb
-    ipdb.set_trace()
     schema = SimpleRecordSchema()
     schema.context = dict(pid=pid)
     rec = schema.dump(record_resolver.resolve(pid.pid_value)[1])

@@ -35,8 +35,8 @@ import pytest
 from elasticsearch.exceptions import RequestError
 from flask import Flask
 from flask_babelex import Babel
-from invenio_db import db as db_
 from invenio_db import InvenioDB
+from invenio_db import db as db_
 from invenio_indexer import InvenioIndexer
 from invenio_indexer.api import RecordIndexer
 from invenio_pidstore import InvenioPIDStore
@@ -52,7 +52,6 @@ from invenio_pidrelations.contrib.versioning import PIDVersioning
 from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.serializers.schemas import RelationSchema
 from invenio_pidrelations.utils import resolve_relation_type_config
-
 
 # add tests to the sys path
 sys.path.append(os.path.dirname(__file__))
@@ -126,12 +125,13 @@ def version_relation(app, db):
 
 @pytest.fixture()
 def recids(app, db):
+    """Create recids fixture."""
     return {
         str(status): PersistentIdentifier.create(
             'recid', 'pid_status_{}'.format(status), object_type='rec',
             status=status
         ) for status in [PIDStatus.REGISTERED, PIDStatus.DELETED,
-                       PIDStatus.RESERVED, PIDStatus.REDIRECTED]
+                         PIDStatus.RESERVED, PIDStatus.REDIRECTED]
     }
 
 
@@ -329,9 +329,11 @@ def custom_relation_schema(app):
 #     """Versioned PIDs fixture with one parent and two versions."""
 #     h1 = PersistentIdentifier.create('recid', 'foobar', object_type='rec',
 #                                      status=PIDStatus.REGISTERED)
-#     h1v1 = PersistentIdentifier.create('recid', 'foobar.v1', object_type='rec',
+#     h1v1 = PersistentIdentifier.create('recid', 'foobar.v1',
+#                                        object_type='rec',
 #                                        status=PIDStatus.REGISTERED)
-#     h1v2 = PersistentIdentifier.create('recid', 'foobar.v2', object_type='rec',
+#     h1v2 = PersistentIdentifier.create('recid', 'foobar.v2',
+#                                        object_type='rec',
 #                                        status=PIDStatus.REGISTERED)
 #     pv = PIDVersioning(parent=h1)
 #     pv.insert_child(h1v1)

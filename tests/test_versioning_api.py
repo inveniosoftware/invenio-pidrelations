@@ -48,8 +48,6 @@ def test_api(app, db):
     cvers = PIDVersioning(child=version_pid)
     rvers = PIDVersioning(child=version_pid, parent=parent_pid)
 
-    import ipdb
-    ipdb.set_trace()
 
 def test_version_pids_create(app, db):
 

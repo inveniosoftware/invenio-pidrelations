@@ -26,11 +26,11 @@
 
 from __future__ import absolute_import, print_function
 
-from sqlalchemy.orm import aliased
 from flask_sqlalchemy import BaseQuery
 from invenio_db import db
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import aliased
 
 from .models import PIDRelation
 
@@ -38,14 +38,14 @@ from .models import PIDRelation
 class PIDQuery(BaseQuery):
     """Query used by PIDNodes APIs when requesting related PIDs."""
 
-    def __init__(self, *args, _filtered_pid_class=PersistentIdentifier,
-                 **kwargs):
-        """Constructor
+    def __init__(self, entities, session,
+                 _filtered_pid_class=PersistentIdentifier):
+        """Constructor.
 
         :param _filtered_pid_class: SQLAlchemy Model class which is used for
         status filtering.
         """
-        super(PIDQuery, self).__init__(*args, **kwargs)
+        super(PIDQuery, self).__init__(entities, session)
         self._filtered_pid_class = _filtered_pid_class
 
     def ordered(self, ord='desc'):
@@ -58,10 +58,11 @@ class PIDQuery(BaseQuery):
     def status(self, status_in):
         """Filter the PIDs based on their status."""
         if isinstance(status_in, PIDStatus):
-            status_in = [status_in,]
+            status_in = [status_in, ]
         return self.filter(
             self._filtered_pid_class.status.in_(status_in)
         )
+
 
 def resolve_pid(fetched_pid):
     """Retrieve the real PID given a fetched PID.
@@ -74,19 +75,22 @@ def resolve_pid(fetched_pid):
         pid_provider=fetched_pid.provider.pid_provider
     )
 
+
 class PIDNode(object):
     """PID Node API.
 
     A node can have multiple parents and multiple children for a given
     relation_type.
     """
+
     def __init__(self, pid, relation_type):
+        """Constructor."""
         super(PIDNode, self).__init__()
         self.relation_type = relation_type
         self.pid = pid
 
     def _connected_pids(self, from_parent=True):
-        """Follow a relationship to find connected PIDs.abs
+        """Follow a relationship to find connected PIDs.abs.
 
         :param from_parent: search children from the current pid if True, else
         search for its parents.
@@ -100,7 +104,7 @@ class PIDNode(object):
             to_relation = PIDRelation.parent_id
             from_relation = PIDRelation.child_id
         query = PIDQuery(
-            [to_pid], db.session(), _filtered_pid_class=to_pid
+            [to_pid], db.session(),
         ).join(
             PIDRelation,
             to_pid.id == to_relation
@@ -120,7 +124,6 @@ class PIDNode(object):
             )
 
         return query
-
 
     @property
     def parents(self):
@@ -145,6 +148,7 @@ class PIDNode(object):
     def insert_child(self, pid):
         """Add the given PID to the list of children PIDs."""
         try:
+            # Here add the check for the max parents and the max children
             with db.session.begin_nested():
                 if not isinstance(pid, PersistentIdentifier):
                     pid = resolve_pid(pid)
@@ -154,10 +158,123 @@ class PIDNode(object):
                     self.pid, pid, self.relation_type.id, None
                 )
         except IntegrityError:
-            raise RelationConflictError("PID Relation already exists.")
+            raise Exception("PID Relation already exists.")
+
+    def remove_child(self, child_pid, reorder=False):
+        """Remove a child from a PID concept."""
+        with db.session.begin_nested():
+            if not isinstance(child_pid, PersistentIdentifier):
+                child_pid = resolve_pid(child_pid)
+            if not isinstance(self.pid, PersistentIdentifier):
+                self.pid = resolve_pid(self.pid)
+            # use PIDQuery here
+            relation = PIDRelation.query.filter_by(
+                parent=self.pid,
+                child=child_pid,
+                relation_type=self.relation_type.id).one()
+            db.session.delete(relation)
 
 
+class PIDNodeOrdered(PIDNode):
+    """PID Node API.
 
+    A node can have multiple parents and multiple children for a given
+    relation_type.
+    """
+
+    def __init__(self, pid, relation_type):
+        """Constructor."""
+        super(PIDNode, self).__init__()
+        self.relation_type = relation_type
+        self.pid = pid
+
+    @property
+    def index(self, pid):
+        """Index of the child in the relation."""
+        import ipdb
+        ipdb.set_trace()
+        return self.relation.index
+
+    @property
+    def is_last_child(pid):
+        """
+        Determine if 'pid' is the latest version of a resource.
+
+        Resolves True for Versioned PIDs which are the oldest of its siblings.
+        False otherwise, also for Head PIDs.
+        """
+        last_child = self.last_child
+        if last_child is None:
+            return False
+        return last_child == self.child
+
+    @property
+    def last_child(self):
+        """
+        Get the latest PID as pointed by the Head PID.
+
+        If the 'pid' is a Head PID, return the latest of its children.
+        If the 'pid' is a Version PID, return the latest of its siblings.
+        Return None for the non-versioned PIDs.
+        """
+        return self.get_children(ordered=False).filter(
+            PIDRelation.index.isnot(None)).order_by(
+                PIDRelation.index.desc()).first()
+
+    @property
+    def next_child(self):
+        """Get the next sibling in the PID relation."""
+        if self.relation.index is not None:
+            return self.children.filter_by(
+                index=self.relation.index + 1).one_or_none()
+        else:
+            return None
+
+    def previous_child(self):
+        pass
+
+    def insert_child(self, child, index=None):
+        """Insert a new child into a PID concept.
+
+        Argument 'index' can take the following values:
+            0,1,2,... - insert child PID at the specified position
+            -1 - insert the child PID at the last position
+            None - insert child without order (no re-ordering is done)
+
+            NOTE: If 'index' is specified, all sibling relations should
+                  have PIDRelation.index information.
+
+        """
+        try:
+            with db.session.begin_nested():
+                if index is not None:
+                    child_relations = self.parent.child_relations.filter(
+                        PIDRelation.relation_type ==
+                        self.relation_type).order_by(PIDRelation.index).all()
+                    relation_obj = PIDRelation.create(
+                        self.parent, child, self.relation_type, None)
+                    if index == -1:
+                        child_relations.append(relation_obj)
+                    else:
+                        child_relations.insert(index, relation_obj)
+                    for idx, c in enumerate(child_relations):
+                        c.index = idx
+                else:
+                    relation_obj = PIDRelation.create(
+                        self.parent, child, self.relation_type, None)
+        except IntegrityError:
+            raise Exception("PID Relation already exists.")
+
+    def remove_child(self, child):
+        """."""
+        # this needs rework
+        # if reorder:
+        #     child_relations = self.parent.child_relations.filter(
+        #         PIDRelation.relation_type == self.relation_type).order_by(
+        #             PIDRelation.index).all()
+        #     for idx, c in enumerate(child_relations):
+        #         c.index = idx
+        pass
 
 class PIDConcept(object):
     """API for PID version relations."""
@@ -255,11 +372,6 @@ class PIDConcept(object):
             return q.order_by(PIDRelation.index.asc())
         else:
             return q
-
-    @property
-    def index(self):
-        """Index of the child in the relation."""
-        return self.relation.index
 
     @property
     def children(self):
@@ -387,6 +499,8 @@ class PIDConceptOrdered(PIDConcept):
 
 
 __all__ = (
+    'PIDNode',
+    'PIDNodeOrdered',
     'PIDConcept',
     'PIDConceptOrdered',
 )

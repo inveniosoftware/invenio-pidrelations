@@ -25,11 +25,10 @@
 """api PIDNode tests."""
 
 import pytest
-from invenio_pidrelations.api import PIDNode
 from invenio_pidstore.models import PIDStatus
-
 from test_helpers import pid_to_fetched_recid
 
+from invenio_pidrelations.api import PIDNode
 
 with_pid_and_fetched_pid = pytest.mark.parametrize("build_pid", [
     (lambda pid: pid),
@@ -91,3 +90,19 @@ def test_node_insert_child(db, version_relation, version_pids, build_pid,
     parent_node.insert_child(child_pid)
     assert child_node.is_child
     assert child_node.parents.all() == [version_pids[0]['parent']]
+
+
+@with_pid_and_fetched_pid
+def test_node_remove_child(db, version_relation, version_pids, build_pid,
+                           recids):
+    """Test PIDNode.remove_child."""
+    parent_pid = build_pid(version_pids[0]['parent'])
+    parent_node = PIDNode(parent_pid,
+                          version_relation)
+    child_pid = build_pid(recids[str(PIDStatus.REGISTERED)])
+    child_node = PIDNode(child_pid,
+                         version_relation)
+    parent_node.insert_child(child_pid)
+    assert child_node.is_child
+    parent_node.remove_child(child_pid)
+    assert not child_node.is_child

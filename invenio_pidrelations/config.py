@@ -54,6 +54,14 @@ PIDRELATIONS_INDEX_RELATIONS = False
 PIDRELATIONS_DEFAULT_VALUE = 'foobar'
 """Default value for the application."""
 
+PIDRELATIONS_DEFAULT_MAX_PARENTS = None
+"""Default value for the maximum number of parents."""
+# None = unlimited
+
+PIDRELATIONS_DEFAULT_MAX_CHILDREN = None
+"""Default value for the maximum number of children."""
+# None = unlimited
+
 PIDRELATIONS_INDEXED_RELATIONS = dict(
     recid=dict(
         field='version',
