@@ -135,6 +135,48 @@ def test_ordered_node_last_child(db, version_relation,
     assert ordered_parent_node.last_child == version_pids[0]['children'][-1]
 
 
+@with_pid_and_fetched_pid
+def test_ordered_node_next_child(db, version_relation, version_pids,
+                                 build_pid, recids):
+    """Test the PIDNodeOrdered next_child method."""
+    parent_pid = build_pid(version_pids[0]['parent'])
+    ordered_parent_node = PIDNodeOrdered(parent_pid, version_relation)
+    assert ordered_parent_node.next_child(version_pids[0]['children'][0]) == \
+        version_pids[0]['children'][1]
+    # Check that the next child can be retrieved if there is a "hole" in the
+    # sequence of indices.
+    ordered_parent_node.remove_child(version_pids[0]['children'][1],
+                                     reorder=False)
+    del version_pids[0]['children'][1]
+    assert ordered_parent_node.next_child(version_pids[0]['children'][0]) == \
+        version_pids[0]['children'][1]
+    # Check that next_child returns None if there is no next child.
+    assert ordered_parent_node.next_child(version_pids[0]['children'][-1]) \
+        is None
+
+
+@with_pid_and_fetched_pid
+def test_ordered_node_previous_child(db, version_relation, version_pids,
+                                     build_pid, recids):
+    """Test the PIDNodeOrdered previous_child method."""
+    parent_pid = build_pid(version_pids[0]['parent'])
+    ordered_parent_node = PIDNodeOrdered(parent_pid, version_relation)
+    assert ordered_parent_node.previous_child(
+        version_pids[0]['children'][-1]
+    ) == version_pids[0]['children'][-2]
+    # Check that the previous child can be retrieved if there is a "hole" in
+    # the sequence of indices.
+    ordered_parent_node.remove_child(version_pids[0]['children'][-2],
+                                     reorder=False)
+    del version_pids[0]['children'][-2]
+    assert ordered_parent_node.previous_child(
+        version_pids[0]['children'][-1]
+    ) == version_pids[0]['children'][-2]
+    # Check that previous_child returns None if there is no previous child.
+    assert ordered_parent_node.previous_child(version_pids[0]['children'][0]) \
+        is None
+
+
 def assert_children_indices(ordered_parent, children):
     """Check the indices of the list of children of a PIDNodeOrdered."""
     assert len(ordered_parent.children.all()) == len(children)
@@ -167,26 +209,66 @@ def test_ordered_node_insert(db, version_relation, version_pids,
 
 
 @with_pid_and_fetched_pid
-def test_ordered_node_remove(db, version_relation, version_pids,
-                             build_pid, recids):
+def test_ordered_node_remove_with_reorder(db, version_relation, version_pids,
+                                          build_pid, recids):
     """Test PIDNode.remove_child."""
     parent_pid = build_pid(version_pids[0]['parent'])
     ordered_parent_node = PIDNodeOrdered(parent_pid,
                                          version_relation)
     # x-c-c-c-c
     # remove the first child
-    ordered_parent_node.remove_child(version_pids[0]['children'][0])
+    ordered_parent_node.remove_child(version_pids[0]['children'][0],
+                                     reorder=True)
     del version_pids[0]['children'][0]
     assert_children_indices(ordered_parent_node, version_pids[0]['children'])
 
     # c-c-c-x
     # remove the last child
-    ordered_parent_node.remove_child(version_pids[0]['children'][-1])
+    ordered_parent_node.remove_child(version_pids[0]['children'][-1],
+                                     reorder=True)
     del version_pids[0]['children'][-1]
     assert_children_indices(ordered_parent_node, version_pids[0]['children'])
 
     # c-x-c
     # remove the middle child
-    ordered_parent_node.remove_child(version_pids[0]['children'][1])
+    ordered_parent_node.remove_child(version_pids[0]['children'][1],
+                                     reorder=True)
     del version_pids[0]['children'][1]
     assert_children_indices(ordered_parent_node, version_pids[0]['children'])
+
+
+@with_pid_and_fetched_pid
+def test_ordered_node_remove_without_reorder(db, version_relation,
+                                             version_pids, build_pid, recids):
+    """Test PIDNode.remove_child."""
+    parent_pid = build_pid(version_pids[0]['parent'])
+    ordered_parent_node = PIDNodeOrdered(parent_pid,
+                                         version_relation)
+
+    # c-c-c-c-x
+    # remove the last child
+    ordered_parent_node.remove_child(version_pids[0]['children'][-1],
+                                     reorder=False)
+    del version_pids[0]['children'][-1]
+    assert_children_indices(ordered_parent_node, version_pids[0]['children'])
+
+    # x-c-c-c
+    # remove the first child
+    ordered_parent_node.remove_child(version_pids[0]['children'][0],
+                                     reorder=False)
+    del version_pids[0]['children'][0]
+    assert len(ordered_parent_node.children.all()) == \
+        len(version_pids[0]['children'])
+    for idx, child_pid in enumerate(version_pids[0]['children']):
+        assert ordered_parent_node.index(child_pid) == idx + 1
+
+    # c-x-c
+    # remove the middle child
+    ordered_parent_node.remove_child(version_pids[0]['children'][1],
+                                     reorder=False)
+    del version_pids[0]['children'][1]
+    assert len(ordered_parent_node.children.all()) == \
+        len(version_pids[0]['children'])
+    expected = [1, 3]
+    for idx, child_pid in enumerate(version_pids[0]['children']):
+        assert ordered_parent_node.index(child_pid) == expected[idx]

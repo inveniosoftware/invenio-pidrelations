@@ -92,9 +92,18 @@ class PIDNode(object):
 
     @cached_property
     def _resolved_pid(self):
+        """Resolve the pid provided to the constructor if it is a fetched pid.
+        """
         if not isinstance(self.pid, PersistentIdentifier):
             return resolve_pid(self.pid)
         return self.pid
+
+    def _get_child_relation(self, child_pid):
+        """Retrieve the relation between this node and a child PID."""
+        return PIDRelation.query.filter_by(
+            parent=self._resolved_pid,
+            child=child_pid,
+            relation_type=self.relation_type.id).one()
 
     def _connected_pids(self, from_parent=True):
         """Follow a relationship to find connected PIDs.abs.
@@ -219,18 +228,25 @@ class PIDNodeOrdered(PIDNode):
         return self.children.filter(
             PIDRelation.index.isnot(None)).ordered().first()
 
-    @property
-    def next_child(self):
-        """Get the next sibling in the PID relation."""
-        if self.relation.index is not None:
-            return self.children.filter_by(
-                index=self.relation.index + 1).one_or_none()
+    def next_child(self, child_pid):
+        """Get the next child PID in the PID relation."""
+        relation = self._get_child_relation(child_pid)
+        if relation.index is not None:
+            return self.children.filter(
+                PIDRelation.index > relation.index
+            ).ordered(ord='asc').first()
         else:
             return None
 
-    @property
-    def previous_child(self):
-        pass
+    def previous_child(self, child_pid):
+        """Get the previous child PID in the PID relation."""
+        relation = self._get_child_relation(child_pid)
+        if relation.index is not None:
+            return self.children.filter(
+                PIDRelation.index < relation.index
+            ).ordered(ord='desc').first()
+        else:
+            return None
 
     def insert_child(self, child_pid, index=-1):
         """Insert a new child into a PID concept.
@@ -264,14 +280,15 @@ class PIDNodeOrdered(PIDNode):
         except IntegrityError:
             raise Exception("PID Relation already exists.")
 
-    def remove_child(self, child_pid):
+    def remove_child(self, child_pid, reorder=False):
         """Remove a child from a PID concept."""
         super(PIDNodeOrdered, self).remove_child(child_pid)
         child_relations = self._resolved_pid.child_relations.filter(
             PIDRelation.relation_type == self.relation_type.id).order_by(
                 PIDRelation.index).all()
-        for idx, c in enumerate(child_relations):
-            c.index = idx
+        if reorder:
+            for idx, c in enumerate(child_relations):
+                c.index = idx
 
 
 class PIDConcept(object):
