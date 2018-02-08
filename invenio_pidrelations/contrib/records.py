@@ -28,13 +28,13 @@ from invenio_indexer.api import RecordIndexer
 from invenio_pidstore.models import PersistentIdentifier
 from invenio_records.api import Record
 
-from ..api import PIDConcept
+from ..api import PIDNode
 from ..contrib.versioning import PIDVersioning
 from ..utils import resolve_relation_type_config
 
 
-class RecordDraft(PIDConcept):
-    """Record Draft relationship.
+class PIDNodeDraft(PIDNode):
+    """Navigate between Record and the .
 
     Users of this class should make calls to `link` and `unlink` based on their
     specific use-cases. Typical scenario is that of creating a new Deposit
@@ -48,16 +48,16 @@ class RecordDraft(PIDConcept):
     possess "soft" links to their records' PIDs through metadata.
     """
 
-    def __init__(self, child=None, parent=None, relation=None):
+    def __init__(self, pid):
         """Create a record draft relation."""
         self.relation_type = resolve_relation_type_config('record_draft').id
         if relation is not None:
             if relation.relation_type != self.relation_type:
                 raise ValueError('Provided PID relation ({0}) is not a '
                                  'version relation.'.format(relation))
-            super(RecordDraft, self).__init__(relation=relation)
+            super(PIDNodeDraft, self).__init__(relation=relation)
         else:
-            # RecordDraft is composed of a one parent-child pair, hence we can
+            # PIDNodeDraft is composed of a one parent-child pair, hence we can
             # determine the child from the parent
             self.parent = parent
             self.child = child
@@ -66,55 +66,8 @@ class RecordDraft(PIDConcept):
             if child:
                 self.parent = self.parents.one_or_none()
             # Run the parent class constructor in attempt to set the relation
-            super(RecordDraft, self).__init__(
-                child=self.child, parent=self.parent,
-                relation_type=self.relation_type, relation=relation)
-
-    @classmethod
-    def link(cls, recid, depid):
-        """Link a recid and depid."""
-        recid_api = cls(parent=recid)
-        depid_api = cls(child=depid)
-        if recid_api.has_children:
-            raise Exception('Recid {} already has a depid as a draft.'
-                            .format(recid))
-        if depid_api.parent:
-            raise Exception('Depid {} already is a draft of a recid.'
-                            .format(recid))
-        recid_api.insert_child(depid)
-
-    @classmethod
-    def unlink(cls, recid, depid):
-        """Unlink a recid and depid."""
-        return cls(parent=recid).remove_child(depid)
-
-    @classmethod
-    def get_draft(cls, recid):
-        """Get the draft of a record."""
-        api = cls(parent=recid)
-        if api.exists:
-            return api.children.one_or_none()
-        else:
-            return None
-
-    @classmethod
-    def get_recid(cls, depid):
-        """Get the recid of a record."""
-        api = cls(child=depid)
-        if api.exists:
-            return api.parent
-        else:
-            return None
-
-
-def get_latest_draft(recid_pid):
-    """Return the latest draft for a record."""
-    pv = PIDVersioning(child=recid_pid)
-    if pv.draft_child:
-        last_deposit = RecordDraft.get_draft(pv.draft_child)
-    else:
-        last_deposit = None
-    return pv.last_child, last_deposit
+            super(PIDNodeDraft, self).__init__(
+                pid=pid, relation_type=self.relation_type, max_parents=1, max_children=1)
 
 
 def index_siblings(pid, include_pid=False, children=None,

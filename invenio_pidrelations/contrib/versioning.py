@@ -101,11 +101,6 @@ class PIDVersioning(PIDConceptOrdered):
             self.parent.redirect(self.child)
 
     @property
-    def exists(self):
-        """Check if the PID Versioning exists."""
-        return self.parent is not None
-
-    @property
     def last_child(self):
         """
         Get the latest PID as pointed by the Head PID.
@@ -167,6 +162,7 @@ class PIDVersioning(PIDConceptOrdered):
     @property
     def children(self):
         """Children of the parent."""
+        # TODO: use PIDQuery and filter on pid_status
         return self.get_children(pid_status=PIDStatus.REGISTERED, ordered=True)
 
 
