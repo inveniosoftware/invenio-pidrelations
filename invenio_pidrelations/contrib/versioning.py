@@ -102,7 +102,7 @@ class PIDNodeVersioning(PIDNodeOrdered):
                 "Version PIDs should not have status 'RESERVED'. Use "
                 "remove_draft_child to remove a draft PID.")
         with db.session.begin_nested():
-            super(PIDVersioning, self).remove_child(child, reorder=True)
+            super(PIDNodeVersioning, self).remove_child(child, reorder=True)
             self.update_redirect()
 
     @property
@@ -131,7 +131,7 @@ class PIDNodeVersioning(PIDNodeOrdered):
 
         if not self.draft_child:
             with db.session.begin_nested():
-                super(PIDVersioning, self).insert_child(child, index=-1)
+                super(PIDNodeVersioning, self).insert_child(child, index=-1)
         else:
             raise PIDRelationConsistencyError(
                 "Draft child already exists for this relation: {0}".format(
@@ -141,8 +141,8 @@ class PIDNodeVersioning(PIDNodeOrdered):
         """Remove the draft child from versioning."""
         if self.draft_child:
             with db.session.begin_nested():
-                super(PIDVersioning, self).remove_child(self.draft_child,
-                                                        reorder=True)
+                super(PIDNodeVersioning, self).remove_child(self.draft_child,
+                                                            reorder=True)
 
     def update_redirect(self):
         """Update the parent redirect to the current last child.
@@ -167,14 +167,14 @@ versioning_blueprint = Blueprint(
 
 @versioning_blueprint.app_template_filter()
 def to_versioning_api(pid, child=True):
-    """Get PIDVersioning object."""
-    return PIDVersioning(
+    """Get PIDNodeVersioning object."""
+    return PIDNodeVersioning(
         child=pid if child else None,
         parent=pid if not child else None
     )
 
 
 __all__ = (
-    'PIDVersioning',
+    'PIDNodeVersioning',
     'versioning_blueprint'
 )

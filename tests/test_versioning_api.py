@@ -30,6 +30,7 @@ import pytest
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 
 from invenio_pidrelations.contrib.versioning import PIDNodeVersioning
+from invenio_pidrelations.errors import PIDRelationConsistencyError
 from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.utils import resolve_relation_type_config
 from invenio_pidrelations.errors import PIDRelationConsistencyError
@@ -76,3 +77,35 @@ def test_versioning_insert(db, version_pids):
     # Check the exception raised when trying to insert a RESERVED PID
     with pytest.raises(PIDRelationConsistencyError):
         h1.insert_child(reserved_pid)
+
+
+def test_versioning_remove_child(db, version_pids):
+    """Test the remove child method of PIDNodeVersioning."""
+    h1 = PIDNodeVersioning(version_pids[0]['parent'])
+    # try to remove the draft child using remove_child
+    with pytest.raises(PIDRelationConsistencyError):
+        h1.remove_child(version_pids[0]['children'][-1])
+    # assert that the parent redirects to the last child
+    assert version_pids[0]['parent'].get_redirect() == \
+        version_pids[0]['children'][2]
+    # remove the last child
+    h1.remove_child(version_pids[0]['children'][2])
+    # assert that the number of children has decreased by 1
+    assert len(h1.children.all()) == \
+        len(version_pids[0]['children']) - 1
+    # assert that the parent now redirects to the new last child
+    assert version_pids[0]['parent'].get_redirect() == \
+        version_pids[0]['children'][1]
+
+
+def test_versioning_insert_draft_child(db, version_pids):
+    """Test the insert_draft_child method of PIDNodeVersioning."""
+    h1 = PIDNodeVersioning(version_pids[0]['parent'])
+    # assert that there is a draft_child present
+    assert h1.draft_child == version_pids[0]['children'][-1]
+    draft2 = PersistentIdentifier.create('recid', 'foobar.draft2',
+                                         object_type='rec',
+                                         status=PIDStatus.RESERVED)
+    with pytest.raises(PIDRelationConsistencyError):
+        # try to add a second draft_child
+        h1.insert_draft_child(draft2)

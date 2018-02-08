@@ -85,7 +85,7 @@ class PIDNodeDraft(PIDNode):
 #         "Only one of the 'eager' and 'neighbors_eager' flags can be set to " \
 #         "True, not both"
 #     if children is None:
-#         children = PIDVersioning(child=pid).children.all()
+#         children = PIDNodeVersioning(child=pid).children.all()
 
 #     objid = str(pid.object_uuid)
 #     children = [str(p.object_uuid) for p in children]

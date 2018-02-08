@@ -147,11 +147,11 @@ def version_pids(app, db, version_relation, draft_relation):
     h1 = PersistentIdentifier.create('recid', 'foobar', object_type='rec',
                                      status=PIDStatus.REGISTERED)
     h1v1 = PersistentIdentifier.create('recid', 'foobar.v1', object_type='rec',
-                                     status=PIDStatus.REGISTERED)
+                                       status=PIDStatus.REGISTERED)
     h1v2 = PersistentIdentifier.create('recid', 'foobar.v2', object_type='rec',
-                                     status=PIDStatus.REGISTERED)
+                                       status=PIDStatus.REGISTERED)
     h1v3 = PersistentIdentifier.create('recid', 'foobar.v3', object_type='rec',
-                                     status=PIDStatus.REGISTERED)
+                                       status=PIDStatus.REGISTERED)
     h1del1 = PersistentIdentifier.create('recid', 'foobar.del1',
                                          object_type='rec',
                                          status=PIDStatus.DELETED)
@@ -357,7 +357,7 @@ def custom_relation_schema(app):
 #     h1v2 = PersistentIdentifier.create('recid', 'foobar.v2',
 #                                        object_type='rec',
 #                                        status=PIDStatus.REGISTERED)
-#     pv = PIDVersioning(parent=h1)
+#     pv = PIDNodeVersioning(parent=h1)
 #     pv.insert_child(h1v1)
 #     pv.insert_child(h1v2)
 #     db.session.commit()

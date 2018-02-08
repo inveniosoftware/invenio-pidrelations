@@ -68,7 +68,7 @@ from invenio_records.api import Record
 from marshmallow import Schema, fields
 
 from invenio_pidrelations import InvenioPIDRelations
-from invenio_pidrelations.contrib.versioning import PIDVersioning, \
+from invenio_pidrelations.contrib.versioning import PIDNodeVersioning, \
     versioning_blueprint
 from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.serializers.schemas import PIDRelationsMixin
@@ -152,6 +152,6 @@ def record_minter(record_uuid, data):
     provider = RecordIdProvider.create('rec', record_uuid)
     data['recid'] = provider.pid.pid_value
 
-    versioning = PIDVersioning(parent=parent_pid)
+    versioning = PIDNodeVersioning(parent=parent_pid)
     versioning.insert_child(child=provider.pid)
     return provider.pid
