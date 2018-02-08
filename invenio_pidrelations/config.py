@@ -30,17 +30,11 @@ RelationType = namedtuple('RelationType',
                           ['id', 'name', 'label', 'api', 'schema'])
 
 PIDRELATIONS_RELATION_TYPES = [
-    RelationType(0, 'ordered', 'Ordered',
-                 'invenio_pidrelations.api:PIDConceptOrdered',
-                 'invenio_pidrelations.serializers.schemas.RelationSchema'),
-    RelationType(1, 'unordered', 'Unordered',
-                 'invenio_pidrelations.api:PIDConcept',
-                 'invenio_pidrelations.serializers.schemas.RelationSchema'),
-    RelationType(2, 'version', 'Version',
+    RelationType(0, 'version', 'Version',
                  'invenio_pidrelations.contrib.versioning:PIDVersioning',
                  'invenio_pidrelations.serializers.schemas.RelationSchema'),
-    RelationType(3, 'record_draft', 'Record Draft',
-                 'invenio_pidrelations.contrib.records:RecordDraft',
+    RelationType(1, 'record_draft', 'Record Draft',
+                 'invenio_pidrelations.contrib.draft:PIDNodeDraft',
                  'invenio_pidrelations.serializers.schemas.RelationSchema'),
 ]
 

@@ -29,18 +29,20 @@ from invenio_pidstore.models import PersistentIdentifier
 from invenio_records.api import Record
 
 from ..api import PIDNode
-from ..contrib.versioning import PIDVersioning
 from ..utils import resolve_relation_type_config
 
 
 class PIDNodeDraft(PIDNode):
-    """Navigate between Record and the .
+    """API for PID draft relations.
 
-    Users of this class should make calls to `link` and `unlink` based on their
-    specific use-cases. Typical scenario is that of creating a new Deposit
-    which is linked to a not-yet published record PID (PID status is RESERVED).
-    Linking these two makes it possible for creating new record versions and
-    having the abiltiy to track their deposits.
+    parents (max: 1): a record PID (potentially RESERVED).
+    children (max: 1): a draft record PID.
+
+    A common submission workflow is to have a draft record which can be
+    published. The published record has its own separate PID. See
+    invenio-deposit for more details.
+    Typical scenario is that of creating a new Deposit which is linked to a
+    not-yet published record PID (PID status is RESERVED).
 
     NOTE: This relation exists because usually newly created records are not
     immediately stored inside the database (they have no `RecordMetada`). This
@@ -49,27 +51,18 @@ class PIDNodeDraft(PIDNode):
     """
 
     def __init__(self, pid):
-        """Create a record draft relation."""
-        self.relation_type = resolve_relation_type_config('record_draft').id
-        if relation is not None:
-            if relation.relation_type != self.relation_type:
-                raise ValueError('Provided PID relation ({0}) is not a '
-                                 'version relation.'.format(relation))
-            super(PIDNodeDraft, self).__init__(relation=relation)
-        else:
-            # PIDNodeDraft is composed of a one parent-child pair, hence we can
-            # determine the child from the parent
-            self.parent = parent
-            self.child = child
-            if parent:
-                self.child = self.children.one_or_none()
-            if child:
-                self.parent = self.parents.one_or_none()
-            # Run the parent class constructor in attempt to set the relation
-            super(PIDNodeDraft, self).__init__(
-                pid=pid, relation_type=self.relation_type, max_parents=1, max_children=1)
+        """Create a record draft API.
+
+        :param pid: either the published record PID or the deposit PID.
+        """
+        self.relation_type = resolve_relation_type_config('record_draft')
+        super(PIDNodeDraft, self).__init__(
+            pid=pid, relation_type=self.relation_type,
+            max_parents=1, max_children=1
+        )
 
 
+# TODO: refactor
 def index_siblings(pid, include_pid=False, children=None,
                    neighbors_eager=False, eager=False, with_deposits=True):
     """Send sibling records of the passed pid for indexing.

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Invenio.
-# Copyright (C) 2017 CERN.
+# Copyright (C) 2017, 2018 CERN.
 #
 # Invenio is free software; you can redistribute it
 # and/or modify it under the terms of the GNU General Public License as
@@ -24,6 +24,9 @@
 
 """Test helpers."""
 
+import pytest
+
+from invenio_pidstore.models import PIDStatus, PersistentIdentifier
 from invenio_pidstore.fetchers import FetchedPID
 from invenio_pidstore.providers.recordid import RecordIdProvider
 
@@ -35,3 +38,21 @@ def pid_to_fetched_recid(pid):
         pid_type=RecordIdProvider.pid_type,
         pid_value=pid.pid_value,
     )
+
+
+with_pid_and_fetched_pid = pytest.mark.parametrize("build_pid", [
+    (lambda pid: pid),
+    # test with a fetched PID
+    (lambda pid: pid_to_fetched_recid(pid)),
+])
+"""Decorator used to test with real PersistentIdentifier and fetched PID."""
+
+
+def create_pids(number, prefix=''):
+    """"Create a give'n number of PIDs.
+
+    :param number: number of PIDs to create.
+    """
+    return [PersistentIdentifier.create(
+        'recid', '{0}_pid_value_{1}'.format(prefix, p), object_type='rec',
+        status=PIDStatus.REGISTERED) for p in range(number)]

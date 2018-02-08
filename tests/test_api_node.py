@@ -24,26 +24,15 @@
 
 """api PIDNode tests."""
 
+import os
+import sys
+
 import pytest
 from invenio_pidstore.models import PIDStatus, PersistentIdentifier
-from test_helpers import pid_to_fetched_recid
+from test_helpers import with_pid_and_fetched_pid, create_pids
 
 from invenio_pidrelations.api import PIDNode, PIDNodeOrdered
 from invenio_pidrelations.errors import PIDRelationConsistencyError
-
-
-with_pid_and_fetched_pid = pytest.mark.parametrize("build_pid", [
-    (lambda pid: pid),
-    # test with a fetched PID
-    (lambda pid: pid_to_fetched_recid(pid)),
-])
-"""Decorator used to test with real PersistentIdentifier and fetched PID."""
-
-
-def create_pids(number):
-    return [PersistentIdentifier.create(
-        'recid', 'pid_value_{}'.format(p), object_type='rec',
-        status=PIDStatus.REGISTERED) for p in range(number)]
 
 
 @with_pid_and_fetched_pid
@@ -294,10 +283,6 @@ def test_node_max_parents(db, version_relation, version_pids,
                           build_pid, recids):
     """Test the PIDNode max parents attribute."""
     parent_pid_1 = build_pid(version_pids[0]['parent'])
-    # FIXME: how would the first one recognize that one of their children was
-    # added to another parent which has a larger number of max_children?
-    # We can assume that all the PIDNodes for a specific relation type have
-    # the same max_parents and max_children
     parent_pid_2 = build_pid(version_pids[1]['parent'])
     ordered_parent_node_1 = PIDNode(parent_pid_1,
                                     version_relation, max_parents=1)
