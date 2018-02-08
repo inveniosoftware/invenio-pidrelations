@@ -48,7 +48,7 @@ from sqlalchemy_utils.functions import create_database, database_exists
 
 from invenio_pidrelations import InvenioPIDRelations
 from invenio_pidrelations.config import RelationType
-from invenio_pidrelations.contrib.versioning import PIDVersioning
+from invenio_pidrelations.contrib.versioning import PIDNodeVersioning
 from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.serializers.schemas import RelationSchema
 from invenio_pidrelations.utils import resolve_relation_type_config
@@ -124,6 +124,12 @@ def version_relation(app, db):
 
 
 @pytest.fixture()
+def draft_relation(app, db):
+    """Versioning relation."""
+    return resolve_relation_type_config('record_draft')
+
+
+@pytest.fixture()
 def recids(app, db):
     """Create recids fixture."""
     return {
@@ -136,7 +142,7 @@ def recids(app, db):
 
 
 @pytest.fixture()
-def version_pids(app, db, version_relation):
+def version_pids(app, db, version_relation, draft_relation):
     """Create versionned PIDs."""
     h1 = PersistentIdentifier.create('recid', 'foobar', object_type='rec',
                                      status=PIDStatus.REGISTERED)
@@ -147,12 +153,20 @@ def version_pids(app, db, version_relation):
                                          object_type='rec')
     h1del2 = PersistentIdentifier.create('recid', 'foobar.del2',
                                          object_type='rec')
+    h1draft1 = PersistentIdentifier.create('recid', 'foobar.draft',
+                                           object_type='rec')
+    h1deposit1 = PersistentIdentifier.create('recid', 'foobar.deposit',
+                                             object_type='rec')
     VERSION = version_relation.id
+    DRAFT = draft_relation.id
     PIDRelation.create(h1, h1v1, VERSION, 0)
     PIDRelation.create(h1, h1v2, VERSION, 1)
     PIDRelation.create(h1, h1v3, VERSION, 2)
     PIDRelation.create(h1, h1del1, VERSION, 3)
     PIDRelation.create(h1, h1del2, VERSION, 4)
+    PIDRelation.create(h1, h1draft1, VERSION, 5)
+    PIDRelation.create(h1draft1, h1deposit1, DRAFT, 0)
+
     h1.redirect(h1v3)
 
     h2 = PersistentIdentifier.create('recid', 'spam', object_type='rec',
@@ -169,7 +183,9 @@ def version_pids(app, db, version_relation):
                 h1v3,
                 h1del1,
                 h1del2,
+                h1draft1,
             ],
+            'deposit': h1deposit1,
         },
         {
             'parent': h2,
@@ -317,7 +333,7 @@ def custom_relation_schema(app):
                      'invenio_pidrelations.api:PIDConcept',
                      CustomRelationSchema),
         RelationType(2, 'version', 'Version',
-                     'invenio_pidrelations.contrib.versioning:PIDVersioning',
+                     'invenio_pidrelations.contrib.versioning:PIDNodeVersioning',
                      CustomRelationSchema),
     ]
     yield app

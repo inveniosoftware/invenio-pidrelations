@@ -28,73 +28,16 @@ from __future__ import absolute_import, print_function
 
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 
-from invenio_pidrelations.contrib.versioning import PIDVersioning
+from invenio_pidrelations.contrib.versioning import PIDNodeVersioning
 from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.utils import resolve_relation_type_config
 
-
-def test_api(app, db):
-    from invenio_pidstore.providers.recordid import RecordIdProvider
-    def create_pid(value):
-        return PersistentIdentifier.create(
-            'recid', value, object_type='rec', status=PIDStatus.REGISTERED)
-    parent_pid = create_pid(0)
-    versioning = PIDVersioning(parent=parent_pid)
-    for pid_value in range(1, 10):
-        version_pid = create_pid(pid_value)
-        versioning.insert_child(child=version_pid)
-
-    pvers = PIDVersioning(parent=parent_pid)
-    cvers = PIDVersioning(child=version_pid)
-    rvers = PIDVersioning(child=version_pid, parent=parent_pid)
+from test_helpers import create_pids
 
 
-def test_version_pids_create(app, db):
-
-    # Create a child, initialize the Versioning API and create a parent
-    assert PersistentIdentifier.query.count() == 0
-    # Create a child
-    h1v1 = PersistentIdentifier.create('recid', '12345', object_type='rec',
-                                       status=PIDStatus.REGISTERED)
-    assert PersistentIdentifier.query.count() == 1
-    pv = PIDVersioning(child=h1v1)
-    # Create a parent
-    pv.create_parent('12345.parent')
-    assert PersistentIdentifier.query.count() == 2
-    assert pv.parent.get_redirect() == h1v1
-    assert pv.parent.status == PIDStatus.REDIRECTED
-    # Make sure 'pid_type', 'object_type' and 'status' are inherited from child
-    assert pv.parent.pid_type == pv.child.pid_type
-    assert pv.parent.object_type == pv.child.object_type
-
-    pr = PIDRelation.query.one()
-    assert pr.child == h1v1
-    assert pr.parent == pv.parent
-
-    VERSION = resolve_relation_type_config('version').id
-    assert pr.relation_type == VERSION
-    assert pr.index == 0
-
-
-def test_version_api_edit(app, db, version_pids):
-    h1, h1v1, h1v2 = (version_pids[p] for p in ['h1', 'h1v1', 'h1v2'])
-    pv = PIDVersioning(parent=h1)
-
-    assert [h1v1, h1v2] == pv.children.all()
-    assert h1.get_redirect() == h1v2
-    assert pv.last_child == h1v2
-
-    h1v3 = PersistentIdentifier.create('recid', 'foobar.v3', object_type='rec',
-                                       status=PIDStatus.REGISTERED)
-    pv.insert_child(h1v3)
-    assert [h1v1, h1v2, h1v3] == pv.children.all()
-    assert h1.get_redirect() == h1v3
-    pv.last_child == h1v3
-
-    pv.remove_child(h1v3)
-    assert h1.get_redirect() == h1v2
-    assert pv.last_child == h1v2
-
-    pv.remove_child(h1v2)
-    assert h1.get_redirect() == h1v1
-    assert pv.last_child == h1v1
+def test_versioning_children(db, version_pids):
+    """Test the children property of PIDNoneVersioning."""
+    h1 = PIDNodeVersioning(version_pids[0]['parent'])
+    assert h1.children.ordered().all() == \
+        [p for p in version_pids[0]['children']
+         if p.status == PIDStatus.REGISTERED]

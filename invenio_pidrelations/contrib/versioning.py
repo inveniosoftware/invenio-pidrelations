@@ -65,7 +65,7 @@ class PIDNodeVersioning(PIDNodeOrdered):
         :param pid: either the parent PID or a specific record version PID.
         """
         self.relation_type = resolve_relation_type_config('version')
-        super(PIDNodeDraft, self).__init__(
+        super(PIDNodeVersioning, self).__init__(
             pid=pid, relation_type=self.relation_type,
             max_parents=1, max_children=None
         )
@@ -73,7 +73,8 @@ class PIDNodeVersioning(PIDNodeOrdered):
     @property
     def children(self):
         """Children of the parent."""
-        return self.children.status(PIDStatus.REGISTERED)
+        return super(PIDNodeVersioning, self).\
+            children.status(PIDStatus.REGISTERED)
 
     def insert_child(self, child, index=-1):
         """Insert a Version child PID."""

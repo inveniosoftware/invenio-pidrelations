@@ -31,7 +31,7 @@ RelationType = namedtuple('RelationType',
 
 PIDRELATIONS_RELATION_TYPES = [
     RelationType(0, 'version', 'Version',
-                 'invenio_pidrelations.contrib.versioning:PIDVersioning',
+                 'invenio_pidrelations.contrib.versioning:PIDNodeVersioning',
                  'invenio_pidrelations.serializers.schemas.RelationSchema'),
     RelationType(1, 'record_draft', 'Record Draft',
                  'invenio_pidrelations.contrib.draft:PIDNodeDraft',
@@ -51,7 +51,7 @@ PIDRELATIONS_DEFAULT_VALUE = 'foobar'
 PIDRELATIONS_INDEXED_RELATIONS = dict(
     recid=dict(
         field='version',
-        api='invenio_pidrelations.contrib.versioning:PIDVersioning',
+        api='invenio_pidrelations.contrib.versioning:PIDNodeVersioning',
         # FIXME: for now the API does not provide any way to know if a relation
         # is ordered or not. Thus we write it here.
         ordered=True,
