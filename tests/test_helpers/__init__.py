@@ -48,11 +48,16 @@ with_pid_and_fetched_pid = pytest.mark.parametrize("build_pid", [
 """Decorator used to test with real PersistentIdentifier and fetched PID."""
 
 
-def create_pids(number, prefix=''):
+def create_pids(number, prefix='', status=PIDStatus.REGISTERED):
     """"Create a give'n number of PIDs.
 
     :param number: number of PIDs to create.
     """
     return [PersistentIdentifier.create(
-        'recid', '{0}_pid_value_{1}'.format(prefix, p), object_type='rec',
-        status=PIDStatus.REGISTERED) for p in range(number)]
+        'recid', '{0}_pid_value_{1}_{2}'.format(prefix, status, p),
+        object_type='rec', status=status) for p in range(number)]
+
+
+def filter_pids(pids, status):
+    """Filter PIDs based on their status."""
+    return [p for p in pids if p.status == status]

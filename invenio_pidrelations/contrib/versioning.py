@@ -88,7 +88,7 @@ class PIDNodeVersioning(PIDNodeOrdered):
             draft = self.draft_child
             if draft and index == -1:
                 index = self.index(draft)
-            super(PIDVersioning, self).insert_child(child, index=index)
+            super(PIDNodeVersioning, self).insert_child(child, index=index)
             self.update_redirect()
 
     def remove_child(self, child):
@@ -108,7 +108,9 @@ class PIDNodeVersioning(PIDNodeOrdered):
     @property
     def draft_child(self):
         """Get the draft (RESERVED) child."""
-        return self.children.status(PIDStatus.RESERVED).one_or_none()
+        return super(PIDNodeVersioning, self).children.status(
+            PIDStatus.RESERVED
+        ).one_or_none()
 
     @property
     def draft_child_deposit(self):
@@ -145,13 +147,15 @@ class PIDNodeVersioning(PIDNodeOrdered):
     def update_redirect(self):
         """Update the parent redirect to the current last child.
 
+        This method should be called on the parent PID node.
+
         Use this method when the status of a PID changed (ex: draft changed
         from RESERVED to REGISTERED)
         """
         if self.last_child:
-            if self.parent.status == PIDStatus.RESERVED:
-                self.parent.register()
-            self.parent.redirect(self.last_child)
+            if self.pid.status == PIDStatus.RESERVED:
+                self.pid.register()
+            self.pid.redirect(self.last_child)
 
 
 versioning_blueprint = Blueprint(

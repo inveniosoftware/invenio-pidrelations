@@ -124,7 +124,7 @@ class PIDNode(object):
             to_relation = PIDRelation.parent_id
             from_relation = PIDRelation.child_id
         query = PIDQuery(
-            [to_pid], db.session(),
+            [to_pid], db.session(), _filtered_pid_class=to_pid
         ).join(
             PIDRelation,
             to_pid.id == to_relation

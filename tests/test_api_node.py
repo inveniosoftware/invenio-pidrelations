@@ -29,7 +29,7 @@ import sys
 
 import pytest
 from invenio_pidstore.models import PIDStatus, PersistentIdentifier
-from test_helpers import with_pid_and_fetched_pid, create_pids
+from test_helpers import with_pid_and_fetched_pid, create_pids, filter_pids
 
 from invenio_pidrelations.api import PIDNode, PIDNodeOrdered
 from invenio_pidrelations.errors import PIDRelationConsistencyError
@@ -38,11 +38,19 @@ from invenio_pidrelations.errors import PIDRelationConsistencyError
 @with_pid_and_fetched_pid
 def test_node_children(db, version_relation, version_pids, build_pid):
     """Test PIDNode.children()."""
+    # Test normal simple ordering of children
     parent_node = PIDNode(build_pid(version_pids[0]['parent']),
                           version_relation)
     assert parent_node.children.ordered('asc').all() == \
         version_pids[0]['children']
 
+    # Check that status filtering works on children
+    assert parent_node.children.status(
+        PIDStatus.REGISTERED
+    ).ordered('asc').all() == filter_pids(version_pids[0]['children'],
+                                          PIDStatus.REGISTERED)
+
+    # Test children of a PID having no children
     child_node = PIDNode(build_pid(version_pids[0]['children'][0]),
                          version_relation)
     assert child_node.children.ordered('asc').all() == []
@@ -114,7 +122,8 @@ def test_ordered_node_index(db, version_relation,
 
     child_pid = build_pid(recids[str(PIDStatus.REGISTERED)])
     ordered_parent_node.insert_child(child_pid)
-    assert ordered_parent_node.index(child_pid) == 5
+    assert ordered_parent_node.index(child_pid) == \
+        len(version_pids[0]['children'])
 
 
 @with_pid_and_fetched_pid
@@ -219,21 +228,21 @@ def test_ordered_node_remove_with_reorder(db, version_relation, version_pids,
     parent_pid = build_pid(version_pids[0]['parent'])
     ordered_parent_node = PIDNodeOrdered(parent_pid,
                                          version_relation)
-    # x-c-c-c-c
+    # x-c-c-c-c-c
     # remove the first child
     ordered_parent_node.remove_child(version_pids[0]['children'][0],
                                      reorder=True)
     del version_pids[0]['children'][0]
     assert_children_indices(ordered_parent_node, version_pids[0]['children'])
 
-    # c-c-c-x
+    # c-c-c-c-x
     # remove the last child
     ordered_parent_node.remove_child(version_pids[0]['children'][-1],
                                      reorder=True)
     del version_pids[0]['children'][-1]
     assert_children_indices(ordered_parent_node, version_pids[0]['children'])
 
-    # c-x-c
+    # c-x-c-c
     # remove the middle child
     ordered_parent_node.remove_child(version_pids[0]['children'][1],
                                      reorder=True)
@@ -249,14 +258,14 @@ def test_ordered_node_remove_without_reorder(db, version_relation,
     ordered_parent_node = PIDNodeOrdered(parent_pid,
                                          version_relation)
 
-    # c-c-c-c-x
+    # c-c-c-c-c-x
     # remove the last child
     ordered_parent_node.remove_child(version_pids[0]['children'][-1],
                                      reorder=False)
     del version_pids[0]['children'][-1]
     assert_children_indices(ordered_parent_node, version_pids[0]['children'])
 
-    # x-c-c-c
+    # x-c-c-c-c
     # remove the first child
     ordered_parent_node.remove_child(version_pids[0]['children'][0],
                                      reorder=False)
@@ -266,14 +275,14 @@ def test_ordered_node_remove_without_reorder(db, version_relation,
     for idx, child_pid in enumerate(version_pids[0]['children']):
         assert ordered_parent_node.index(child_pid) == idx + 1
 
-    # c-x-c
+    # c-x-c-c
     # remove the middle child
     ordered_parent_node.remove_child(version_pids[0]['children'][1],
                                      reorder=False)
     del version_pids[0]['children'][1]
     assert len(ordered_parent_node.children.all()) == \
         len(version_pids[0]['children'])
-    expected = [1, 3]
+    expected = [1, 3, 4]
     for idx, child_pid in enumerate(version_pids[0]['children']):
         assert ordered_parent_node.index(child_pid) == expected[idx]
 

@@ -146,15 +146,21 @@ def version_pids(app, db, version_relation, draft_relation):
     """Create versionned PIDs."""
     h1 = PersistentIdentifier.create('recid', 'foobar', object_type='rec',
                                      status=PIDStatus.REGISTERED)
-    h1v1 = PersistentIdentifier.create('recid', 'foobar.v1', object_type='rec')
-    h1v2 = PersistentIdentifier.create('recid', 'foobar.v2', object_type='rec')
-    h1v3 = PersistentIdentifier.create('recid', 'foobar.v3', object_type='rec')
+    h1v1 = PersistentIdentifier.create('recid', 'foobar.v1', object_type='rec',
+                                     status=PIDStatus.REGISTERED)
+    h1v2 = PersistentIdentifier.create('recid', 'foobar.v2', object_type='rec',
+                                     status=PIDStatus.REGISTERED)
+    h1v3 = PersistentIdentifier.create('recid', 'foobar.v3', object_type='rec',
+                                     status=PIDStatus.REGISTERED)
     h1del1 = PersistentIdentifier.create('recid', 'foobar.del1',
-                                         object_type='rec')
+                                         object_type='rec',
+                                         status=PIDStatus.DELETED)
     h1del2 = PersistentIdentifier.create('recid', 'foobar.del2',
-                                         object_type='rec')
+                                         object_type='rec',
+                                         status=PIDStatus.DELETED)
     h1draft1 = PersistentIdentifier.create('recid', 'foobar.draft',
-                                           object_type='rec')
+                                           object_type='rec',
+                                           status=PIDStatus.RESERVED)
     h1deposit1 = PersistentIdentifier.create('recid', 'foobar.deposit',
                                              object_type='rec')
     VERSION = version_relation.id
