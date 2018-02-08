@@ -29,6 +29,8 @@ from invenio_pidstore.models import PIDStatus, PersistentIdentifier
 from test_helpers import pid_to_fetched_recid
 
 from invenio_pidrelations.api import PIDNode, PIDNodeOrdered
+from invenio_pidrelations.errors import PIDRelationConsistencyError
+
 
 with_pid_and_fetched_pid = pytest.mark.parametrize("build_pid", [
     (lambda pid: pid),
@@ -177,6 +179,16 @@ def test_ordered_node_previous_child(db, version_relation, version_pids,
         is None
 
 
+@with_pid_and_fetched_pid
+def test_ordered_node_is_last_child(db, version_relation,
+                                    version_pids, build_pid, recids):
+    """Test the PIDNodeOrdered is_last_child method."""
+    parent_pid = build_pid(version_pids[0]['parent'])
+    ordered_parent_node = PIDNodeOrdered(parent_pid, version_relation)
+    assert ordered_parent_node.is_last_child(
+        version_pids[0]['children'][-1])
+
+
 def assert_children_indices(ordered_parent, children):
     """Check the indices of the list of children of a PIDNodeOrdered."""
     assert len(ordered_parent.children.all()) == len(children)
@@ -192,16 +204,19 @@ def test_ordered_node_insert(db, version_relation, version_pids,
     ordered_parent_node = PIDNodeOrdered(parent_pid, version_relation)
     child_pids = create_pids(3)
 
+    # c-c-c-c-c-x
     # inserting in the end
     ordered_parent_node.insert_child(child_pids[0], -1)
     version_pids[0]['children'].append(child_pids[0])
     assert_children_indices(ordered_parent_node, version_pids[0]['children'])
 
+    # x-c-c-c-c-c-c
     # inserting in the beginning
     ordered_parent_node.insert_child(child_pids[1], 0)
     version_pids[0]['children'].insert(0, child_pids[1])
     assert_children_indices(ordered_parent_node, version_pids[0]['children'])
 
+    # c-c-c-x-c-c-c-c
     # inserting in the middle
     ordered_parent_node.insert_child(child_pids[2], 3)
     version_pids[0]['children'].insert(3, child_pids[2])
@@ -272,3 +287,39 @@ def test_ordered_node_remove_without_reorder(db, version_relation,
     expected = [1, 3]
     for idx, child_pid in enumerate(version_pids[0]['children']):
         assert ordered_parent_node.index(child_pid) == expected[idx]
+
+
+@with_pid_and_fetched_pid
+def test_node_max_parents(db, version_relation, version_pids,
+                          build_pid, recids):
+    """Test the PIDNode max parents attribute."""
+    parent_pid_1 = build_pid(version_pids[0]['parent'])
+    # FIXME: how would the first one recognize that one of their children was
+    # added to another parent which has a larger number of max_children?
+    # We can assume that all the PIDNodes for a specific relation type have
+    # the same max_parents and max_children
+    parent_pid_2 = build_pid(version_pids[1]['parent'])
+    ordered_parent_node_1 = PIDNode(parent_pid_1,
+                                    version_relation, max_parents=1)
+    ordered_parent_node_2 = PIDNode(parent_pid_2,
+                                    version_relation, max_parents=1)
+    child_pids = create_pids(1)
+
+    ordered_parent_node_1.insert_child(child_pids[0])
+    with pytest.raises(PIDRelationConsistencyError):
+        ordered_parent_node_2.insert_child(child_pids[0])
+
+
+@with_pid_and_fetched_pid
+def test_node_max_children(db, version_relation, version_pids,
+                           build_pid, recids):
+    """Test the PIDNode max children attribute."""
+    parent_pid = build_pid(version_pids[0]['parent'])
+    ordered_parent_node = \
+        PIDNode(parent_pid,
+                version_relation,
+                max_children=len(version_pids[0]['children']))
+    child_pids = create_pids(1)
+
+    with pytest.raises(PIDRelationConsistencyError):
+        ordered_parent_node.insert_child(child_pids[0])

@@ -33,6 +33,7 @@ from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import aliased
 
+from .errors import PIDRelationConsistencyError
 from .models import PIDRelation
 
 
@@ -84,11 +85,14 @@ class PIDNode(object):
     relation_type.
     """
 
-    def __init__(self, pid, relation_type):
+    def __init__(self, pid, relation_type,
+                 max_children=None, max_parents=None):
         """Constructor."""
         super(PIDNode, self).__init__()
         self.relation_type = relation_type
         self.pid = pid
+        self.max_children = max_children
+        self.max_parents = max_parents
 
     @cached_property
     def _resolved_pid(self):
@@ -163,6 +167,19 @@ class PIDNode(object):
 
     def insert_child(self, child_pid):
         """Add the given PID to the list of children PIDs."""
+        if self.max_children is not None and \
+                self.children.count() + 1 >= self.max_children:
+            raise PIDRelationConsistencyError(
+                "Max number of children is set to {}.".
+                format(self.max_children))
+        if self.max_parents is not None and \
+                PIDRelation.query.filter_by(
+                    child=child_pid,
+                    relation_type=self.relation_type.id)\
+                .count() >= self.max_parents:
+            raise PIDRelationConsistencyError(
+                "This pid already has the maximum number of parents.")
+
         try:
             # TODO: Here add the check for the max parents and the max children
             with db.session.begin_nested():
@@ -172,7 +189,7 @@ class PIDNode(object):
                     self._resolved_pid, child_pid, self.relation_type.id, None
                 )
         except IntegrityError:
-            raise Exception("PID Relation already exists.")
+            raise PIDRelationConsistencyError("PID Relation already exists.")
 
     def remove_child(self, child_pid):
         """Remove a child from a PID concept."""
@@ -203,7 +220,6 @@ class PIDNodeOrdered(PIDNode):
             relation_type=self.relation_type.id).one()
         return relation.index
 
-    @property
     def is_last_child(self, child_pid):
         """
         Determine if 'pid' is the latest version of a resource.
@@ -278,7 +294,7 @@ class PIDNodeOrdered(PIDNode):
                 for idx, c in enumerate(child_relations):
                     c.index = idx
         except IntegrityError:
-            raise Exception("PID Relation already exists.")
+            raise PIDRelationConsistencyError("PID Relation already exists.")
 
     def remove_child(self, child_pid, reorder=False):
         """Remove a child from a PID concept."""
