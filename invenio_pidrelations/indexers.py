@@ -28,16 +28,16 @@ from __future__ import absolute_import, print_function
 
 from invenio_pidstore.models import PersistentIdentifier
 
-from .proxies import current_pidrelations
 from .serializers.utils import serialize_relations
 
 
-def index_relations(sender, json=None, record=None, index=None, **kwargs):
+def index_relations(sender, pid_type, json=None,
+                    record=None, index=None, **kwargs):
     """Add relations to the indexed record."""
     pid = PersistentIdentifier.query.filter(
         PersistentIdentifier.object_uuid == record.id,
-        PersistentIdentifier.pid_type == current_pidrelations.primary_pid_type,
-        ).one_or_none()
+        PersistentIdentifier.pid_type == pid_type,
+    ).one_or_none()
     relations = None
     if pid:
         relations = serialize_relations(pid)

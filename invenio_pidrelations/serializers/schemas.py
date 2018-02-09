@@ -111,14 +111,3 @@ class RelationSchema(Schema):
         """Dump the siblings of a PID."""
         data, errors = PIDSchema(many=True).dump(obj.children.all())
         return data
-
-
-class PIDRelationsMixin(object):
-    """Mixin for easy inclusion of relations information in Record schemas."""
-
-    relations = fields.Method('dump_relations')
-
-    def dump_relations(self, obj):
-        """Dump the relations to a dictionary."""
-        pid = self.context['pid']
-        return serialize_relations(pid)

@@ -153,9 +153,9 @@ class PIDNodeVersioning(PIDNodeOrdered):
         from RESERVED to REGISTERED)
         """
         if self.last_child:
-            if self.pid.status == PIDStatus.RESERVED:
-                self.pid.register()
-            self.pid.redirect(self.last_child)
+            if self._resolved_pid.status == PIDStatus.RESERVED:
+                self._resolved_pid.register()
+            self._resolved_pid.redirect(self.last_child)
 
 
 versioning_blueprint = Blueprint(

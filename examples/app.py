@@ -59,6 +59,7 @@ from __future__ import absolute_import, print_function
 from flask import Flask, redirect, render_template, request, url_for
 from invenio_db import InvenioDB, db
 from invenio_indexer import InvenioIndexer
+from invenio_indexer.signals import before_record_index
 from invenio_pidstore import InvenioPIDStore
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 from invenio_pidstore.providers.recordid import RecordIdProvider
@@ -73,6 +74,7 @@ from invenio_pidrelations.contrib.versioning import PIDNodeVersioning, \
 from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.serializers.schemas import PIDRelationsMixin
 from invenio_pidrelations.utils import resolve_relation_type_config
+from invenio_pidrelations.indexers import index_relations
 
 # Create Flask application
 app = Flask(__name__, template_folder='.')
@@ -84,6 +86,9 @@ InvenioPIDRelations(app)
 app.register_blueprint(versioning_blueprint)
 InvenioIndexer(app)
 InvenioRecords(app)
+
+before_record_index.connect(index_relations, sender=app)
+
 
 record_resolver = Resolver(
     pid_type='recid', object_type='rec', getter=Record.get_record

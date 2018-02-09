@@ -37,24 +37,3 @@ PIDRELATIONS_RELATION_TYPES = [
                  'invenio_pidrelations.contrib.draft:PIDNodeDraft',
                  'invenio_pidrelations.serializers.schemas.RelationSchema'),
 ]
-
-
-PIDRELATIONS_PRIMARY_PID_TYPE = 'recid'
-"""Default PID type for relations."""
-
-PIDRELATIONS_INDEX_RELATIONS = False
-"""Enable or disable relations indexing."""
-
-PIDRELATIONS_DEFAULT_VALUE = 'foobar'
-"""Default value for the application."""
-
-PIDRELATIONS_INDEXED_RELATIONS = dict(
-    recid=dict(
-        field='version',
-        api='invenio_pidrelations.contrib.versioning:PIDNodeVersioning',
-        # FIXME: for now the API does not provide any way to know if a relation
-        # is ordered or not. Thus we write it here.
-        ordered=True,
-    )
-)
-"""Default PID fetcher."""

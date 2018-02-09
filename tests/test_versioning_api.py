@@ -35,20 +35,24 @@ from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.utils import resolve_relation_type_config
 from invenio_pidrelations.errors import PIDRelationConsistencyError
 
-from test_helpers import create_pids, filter_pids
+from test_helpers import create_pids, filter_pids, with_pid_and_fetched_pid
 
 
-def test_versioning_children(db, version_pids):
+@with_pid_and_fetched_pid
+def test_versioning_children(db, version_pids, build_pid):
     """Test the children property of PIDNoneVersioning."""
-    h1 = PIDNodeVersioning(version_pids[0]['parent'])
+    parent_pid = build_pid(version_pids[0]['parent'])
+    h1 = PIDNodeVersioning(parent_pid)
     assert h1.children.ordered('asc').all() == \
         filter_pids(version_pids[0]['children'], PIDStatus.REGISTERED)
 
 
-def test_versioning_insert(db, version_pids):
+@with_pid_and_fetched_pid
+def test_versioning_insert_child(db, version_pids, build_pid):
     """Test PIDNodeVersioning.insert_child(...)."""
     new_pids = create_pids(3)
-    h1 = PIDNodeVersioning(version_pids[0]['parent'])
+    parent_pid = build_pid(version_pids[0]['parent'])
+    h1 = PIDNodeVersioning(parent_pid)
     # insert as first child
     h1.insert_child(new_pids[0], 0)
     version_pids[0]['children'].insert(0, new_pids[0])
@@ -79,9 +83,11 @@ def test_versioning_insert(db, version_pids):
         h1.insert_child(reserved_pid)
 
 
-def test_versioning_remove_child(db, version_pids):
+@with_pid_and_fetched_pid
+def test_versioning_remove_child(db, version_pids, build_pid):
     """Test the remove child method of PIDNodeVersioning."""
-    h1 = PIDNodeVersioning(version_pids[0]['parent'])
+    parent_pid = build_pid(version_pids[0]['parent'])
+    h1 = PIDNodeVersioning(parent_pid)
     # try to remove the draft child using remove_child
     with pytest.raises(PIDRelationConsistencyError):
         h1.remove_child(version_pids[0]['children'][-1])
@@ -90,17 +96,23 @@ def test_versioning_remove_child(db, version_pids):
         version_pids[0]['children'][2]
     # remove the last child
     h1.remove_child(version_pids[0]['children'][2])
-    # assert that the number of children has decreased by 1
-    assert len(h1.children.all()) == \
-        len(version_pids[0]['children']) - 1
+    # assert that the pid is not a child
+    assert version_pids[0]['children'][2] not in h1.children.all()
     # assert that the parent now redirects to the new last child
     assert version_pids[0]['parent'].get_redirect() == \
         version_pids[0]['children'][1]
 
+    # test removing the first child doesn't change the redirect
+    h1.remove_child(version_pids[0]['children'][0])
+    assert version_pids[0]['parent'].get_redirect() == \
+        version_pids[0]['children'][1]
 
-def test_versioning_insert_draft_child(db, version_pids):
+
+@with_pid_and_fetched_pid
+def test_versioning_insert_draft_child(db, version_pids, build_pid):
     """Test the insert_draft_child method of PIDNodeVersioning."""
-    h1 = PIDNodeVersioning(version_pids[0]['parent'])
+    parent_pid = build_pid(version_pids[0]['parent'])
+    h1 = PIDNodeVersioning(parent_pid)
     # assert that there is a draft_child present
     assert h1.draft_child == version_pids[0]['children'][-1]
     draft2 = PersistentIdentifier.create('recid', 'foobar.draft2',
@@ -109,3 +121,20 @@ def test_versioning_insert_draft_child(db, version_pids):
     with pytest.raises(PIDRelationConsistencyError):
         # try to add a second draft_child
         h1.insert_draft_child(draft2)
+
+
+@with_pid_and_fetched_pid
+def test_versioning_remove_draft_child(db, version_pids, build_pid):
+    """Test the remove_draft_child method of PIDNodeVersioning."""
+    parent_pid = build_pid(version_pids[0]['parent'])
+    h1 = PIDNodeVersioning(parent_pid)
+    h1.remove_draft_child()
+    assert h1.draft_child is None
+
+
+@with_pid_and_fetched_pid
+def test_versioning_draft_child_deposit(db, version_pids, build_pid):
+    """Test the draft_child_deposit property of PIDNodeVersioning."""
+    parent_pid = build_pid(version_pids[0]['parent'])
+    h1 = PIDNodeVersioning(parent_pid)
+    assert h1.draft_child_deposit == version_pids[0]['deposit']
