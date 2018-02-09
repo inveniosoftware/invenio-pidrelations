@@ -78,10 +78,10 @@ class PIDNodeVersioning(PIDNodeOrdered):
 
     def insert_child(self, child, index=-1):
         """Insert a Version child PID."""
-        if child.status == PIDStatus.RESERVED:
+        if child.status != PIDStatus.REGISTERED:
             raise PIDRelationConsistencyError(
-                "Version PIDs should not have status 'RESERVED'. Use "
-                "insert_draft_child to insert a draft PID.")
+                "Version PIDs should have status 'REGISTERED'. Use "
+                "insert_draft_child to insert 'RESERVED' draft PID.")
         with db.session.begin_nested():
             # if there is a draft and "child" is inserted as the last version,
             # it should be inserted before the draft.
@@ -156,6 +156,14 @@ class PIDNodeVersioning(PIDNodeOrdered):
             if self._resolved_pid.status == PIDStatus.RESERVED:
                 self._resolved_pid.register()
             self._resolved_pid.redirect(self.last_child)
+        elif any(map(lambda pid: pid.status not in [PIDStatus.DELETED,
+                                                    PIDStatus.REGISTERED,
+                                                    PIDStatus.RESERVED],
+                     super(PIDNodeVersioning, self).children.all())):
+            raise PIDRelationConsistencyError(
+                "Invalid relation state. Only REGISTERED, RESERVED "
+                "and DELETED PIDs are supported."
+            )
 
 
 versioning_blueprint = Blueprint(

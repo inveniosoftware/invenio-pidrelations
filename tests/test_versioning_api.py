@@ -138,3 +138,55 @@ def test_versioning_draft_child_deposit(db, version_pids, build_pid):
     parent_pid = build_pid(version_pids[0]['parent'])
     h1 = PIDNodeVersioning(parent_pid)
     assert h1.draft_child_deposit == version_pids[0]['deposit']
+
+
+@with_pid_and_fetched_pid
+def test_update_redirect(db, version_pids, build_pid):
+    """Test PIDNodeVersioning.update_redirect()."""
+    # Test update_redirect on a PID without any child
+    parent_pids = create_pids(1, prefix='parent', status=PIDStatus.RESERVED)
+    draft_pids = create_pids(2, prefix='draft', status=PIDStatus.RESERVED)
+    parent = PIDNodeVersioning(build_pid(parent_pids[0]))
+    parent.update_redirect()
+    assert parent_pids[0].status == PIDStatus.RESERVED
+
+    # Test that update_redirect remains reserved once it has a draft child
+    parent.insert_draft_child(draft_pids[0])
+    assert parent_pids[0].status == PIDStatus.RESERVED
+
+    h1 = PIDNodeVersioning(build_pid(version_pids[0]['parent']))
+
+    def test_redirect(expected_length, expected_redirect):
+        filtered = filter_pids(version_pids[0]['children'],
+                               status=PIDStatus.REGISTERED)
+        assert len(filtered) == expected_length
+        assert h1.children.ordered('asc').all() == filtered
+        assert h1._resolved_pid.get_redirect() == expected_redirect
+
+    # Test update_redirect when it already points to the last version
+    last = h1.last_child
+    draft = h1.draft_child
+    h1.update_redirect()
+    test_redirect(3, last)
+
+    # Test update_redirect after publishing the draft
+    h1.draft_child.register()
+    h1.update_redirect()
+    test_redirect(4, draft)
+
+    # Test update_redirect after deleting the last version
+    h1.last_child.delete()
+    h1.update_redirect()
+    test_redirect(3, last)
+
+    # Test that if every version is deleted the HEAD pid is also deleted
+    for pid in filter_pids(version_pids[0]['children'],
+                           status=PIDStatus.REGISTERED):
+        pid.delete()
+    h1.update_redirect()
+    test_redirect(0, last)
+
+    # Test that an exception is raised if unsupported PIDStatus are used.
+    version_pids[0]['children'][0].status = PIDStatus.NEW
+    with pytest.raises(PIDRelationConsistencyError):
+        h1.update_redirect()
