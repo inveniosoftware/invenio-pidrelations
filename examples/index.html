@@ -23,7 +23,8 @@
 # as an Intergovernmental Organization or submit itself to any jurisdiction.
 -#}
 
-{# {%- from "invenio_pidrelations/macros/pid_versions.html" import pid_versions_dropdown -%} #}
+{%- from "invenio_pidrelations/macros/pid_versions.html" import pid_versions_dropdown -%}
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -69,8 +70,9 @@ body {
       <ul>
         {% for head in heads %}
           <li>[{{ head.pid_value }}]
+              {{ pid_versions_dropdown(head) }}
             <ul>
-            {% set pid_versioning = head | to_versioning_api(child=False) %}
+            {% set pid_versioning = head | to_versioning_api %}
             {% for child in pid_versioning.children %}
               {% set record = child | to_record %}
               <li>[{{ child.pid_value }}] - {{ record['title'] }} <br/> <small>{{ record['body'] }}</small></li>
@@ -99,7 +101,7 @@ body {
         <select name="parent">
           <option value="new" selected>New head</option>
           {% for head in heads %}
-            {% set pid_versioning = head | to_versioning_api(child=False) %}
+            {% set pid_versioning = head | to_versioning_api %}
             {% set last_record = pid_versioning.last_child %}
             <option value="{{ head.pid_value }}">{{ head.pid_value }} (from [{{ last_record.pid_value }}])</option>
           {% endfor %}

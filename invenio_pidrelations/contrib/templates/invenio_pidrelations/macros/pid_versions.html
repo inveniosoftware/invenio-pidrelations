@@ -24,7 +24,7 @@
 -#}
 {%- macro pid_versions_dropdown(pid, pid_view='invenio_records_ui.recid') %}
 {%- set pid_versioning = pid | to_versioning_api -%}
-{% if pid_versioning.parent %}
+{% if pid_versioning.is_parent %}
   {% set all_versions = pid_versioning.children | list %}
   <div class="dropdown pid-versions-dropdown">
     <ul class="dropdown-menu" aria-labelledby="pid-versions-dropdown">
@@ -34,8 +34,11 @@
         </li>
       {% endfor %}
     </ul>
-    {% set pid_version_index = all_versions.index(pid) %}
-    {% set is_latest = all_versions[-1] == pid %}
+{% elif pid_versioning.is_child %}
+    {% set parent = pid_versioning.parent | to_versioning_api %}
+    {% set pid_version_index = parent.index(pid) %}
+    {% set all_versions = parent.children | list %}
+    {% set is_latest = [-1] == pid %}
     <button class="btn btn-default dropdown-toggle" type="button" id="pid-versions-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
       <div class="dropdown-head {{ 'latest' if is_latest else '' }}">
         Version {{ pid_version_index + 1 }}{{ ' (latest)' if is_latest else '' }}

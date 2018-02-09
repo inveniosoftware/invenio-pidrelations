@@ -174,12 +174,9 @@ versioning_blueprint = Blueprint(
 
 
 @versioning_blueprint.app_template_filter()
-def to_versioning_api(pid, child=True):
+def to_versioning_api(pid):
     """Get PIDNodeVersioning object."""
-    return PIDNodeVersioning(
-        child=pid if child else None,
-        parent=pid if not child else None
-    )
+    return PIDNodeVersioning(pid=pid)
 
 
 __all__ = (

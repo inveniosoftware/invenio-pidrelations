@@ -60,6 +60,7 @@ from flask import Flask, redirect, render_template, request, url_for
 from invenio_db import InvenioDB, db
 from invenio_indexer import InvenioIndexer
 from invenio_indexer.signals import before_record_index
+from invenio_records_ui import InvenioRecordsUI
 from invenio_pidstore import InvenioPIDStore
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 from invenio_pidstore.providers.recordid import RecordIdProvider
@@ -72,13 +73,18 @@ from invenio_pidrelations import InvenioPIDRelations
 from invenio_pidrelations.contrib.versioning import PIDNodeVersioning, \
     versioning_blueprint
 from invenio_pidrelations.models import PIDRelation
-from invenio_pidrelations.serializers.schemas import PIDRelationsMixin
 from invenio_pidrelations.utils import resolve_relation_type_config
 from invenio_pidrelations.indexers import index_relations
 
 # Create Flask application
 app = Flask(__name__, template_folder='.')
-app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config.update(dict(
+    SQLALCHEMY_DATABASE_URI='postgresql+psycopg2://'
+                            'postgres2@localhost:5432/invenio',
+    TEMPLATES_AUTO_RELOAD=True,
+    CELERY_ALWAYS_EAGER=True,
+    CELERY_RESULT_BACKEND='cache',
+    CELERY_CACHE_BACKEND='memory'))
 
 InvenioDB(app)
 InvenioPIDStore(app)
@@ -86,16 +92,15 @@ InvenioPIDRelations(app)
 app.register_blueprint(versioning_blueprint)
 InvenioIndexer(app)
 InvenioRecords(app)
-
+InvenioRecordsUI(app)
 before_record_index.connect(index_relations, sender=app)
-
 
 record_resolver = Resolver(
     pid_type='recid', object_type='rec', getter=Record.get_record
 )
 
 
-class SimpleRecordSchema(Schema, PIDRelationsMixin):
+class SimpleRecordSchema(Schema):
     """Tiny schema for our simple record."""
 
     recid = fields.Str()
@@ -157,6 +162,6 @@ def record_minter(record_uuid, data):
     provider = RecordIdProvider.create('rec', record_uuid)
     data['recid'] = provider.pid.pid_value
 
-    versioning = PIDNodeVersioning(parent=parent_pid)
+    versioning = PIDNodeVersioning(pid=parent_pid)
     versioning.insert_child(child=provider.pid)
     return provider.pid
