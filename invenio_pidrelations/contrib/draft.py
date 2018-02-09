@@ -82,8 +82,8 @@ class PIDNodeDraft(PIDNode):
 #     :param with_deposits: Reindex also corresponding record's deposits.
 #     """
 #     assert not (neighbors_eager and eager), \
-#         "Only one of the 'eager' and 'neighbors_eager' flags can be set to " \
-#         "True, not both"
+#         "Only one of the 'eager' and 'neighbors_eager' flags can
+#         "be set to True, not both"
 #     if children is None:
 #         children = PIDNodeVersioning(child=pid).children.all()
 

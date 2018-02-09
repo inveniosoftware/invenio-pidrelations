@@ -28,13 +28,12 @@ from __future__ import absolute_import, print_function
 
 import pytest
 from invenio_pidstore.models import PersistentIdentifier
+from test_helpers import create_pids, with_pid_and_fetched_pid
 
 from invenio_pidrelations.contrib.draft import PIDNodeDraft
+from invenio_pidrelations.errors import PIDRelationConsistencyError
 from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.utils import resolve_relation_type_config
-from invenio_pidrelations.errors import PIDRelationConsistencyError
-
-from test_helpers import with_pid_and_fetched_pid, create_pids
 
 
 @with_pid_and_fetched_pid

@@ -49,7 +49,7 @@ with_pid_and_fetched_pid = pytest.mark.parametrize("build_pid", [
 
 
 def create_pids(number, prefix='', status=PIDStatus.REGISTERED):
-    """"Create a give'n number of PIDs.
+    """Create a give'n number of PIDs.
 
     :param number: number of PIDs to create.
     """

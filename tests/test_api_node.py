@@ -24,12 +24,9 @@
 
 """api PIDNode tests."""
 
-import os
-import sys
-
 import pytest
-from invenio_pidstore.models import PIDStatus, PersistentIdentifier
-from test_helpers import with_pid_and_fetched_pid, create_pids, filter_pids
+from invenio_pidstore.models import PersistentIdentifier, PIDStatus
+from test_helpers import create_pids, filter_pids, with_pid_and_fetched_pid
 
 from invenio_pidrelations.api import PIDNode, PIDNodeOrdered
 from invenio_pidrelations.errors import PIDRelationConsistencyError

@@ -29,12 +29,13 @@ from __future__ import absolute_import, print_function
 from flask import Blueprint
 from invenio_db import db
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
+
 from invenio_pidrelations.contrib.draft import PIDNodeDraft
 
 from ..api import PIDNodeOrdered
+from ..errors import PIDRelationConsistencyError
 from ..models import PIDRelation
 from ..utils import resolve_relation_type_config
-from ..errors import PIDRelationConsistencyError
 
 
 class PIDNodeVersioning(PIDNodeOrdered):

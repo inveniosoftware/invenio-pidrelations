@@ -60,21 +60,21 @@ from flask import Flask, redirect, render_template, request, url_for
 from invenio_db import InvenioDB, db
 from invenio_indexer import InvenioIndexer
 from invenio_indexer.signals import before_record_index
-from invenio_records_ui import InvenioRecordsUI
 from invenio_pidstore import InvenioPIDStore
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 from invenio_pidstore.providers.recordid import RecordIdProvider
 from invenio_pidstore.resolver import Resolver
 from invenio_records import InvenioRecords
 from invenio_records.api import Record
+from invenio_records_ui import InvenioRecordsUI
 from marshmallow import Schema, fields
 
 from invenio_pidrelations import InvenioPIDRelations
 from invenio_pidrelations.contrib.versioning import PIDNodeVersioning, \
     versioning_blueprint
+from invenio_pidrelations.indexers import index_relations
 from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.utils import resolve_relation_type_config
-from invenio_pidrelations.indexers import index_relations
 
 # Create Flask application
 app = Flask(__name__, template_folder='.')

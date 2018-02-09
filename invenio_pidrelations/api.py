@@ -26,12 +26,12 @@
 
 from __future__ import absolute_import, print_function
 
-from werkzeug.utils import cached_property
 from flask_sqlalchemy import BaseQuery
 from invenio_db import db
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import aliased
+from werkzeug.utils import cached_property
 
 from .errors import PIDRelationConsistencyError
 from .models import PIDRelation
@@ -96,8 +96,7 @@ class PIDNode(object):
 
     @cached_property
     def _resolved_pid(self):
-        """Resolve the pid provided to the constructor if it is a fetched pid.
-        """
+        """Resolve self.pid if it is a fetched pid."""
         if not isinstance(self.pid, PersistentIdentifier):
             return resolve_pid(self.pid)
         return self.pid

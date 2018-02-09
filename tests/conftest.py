@@ -48,7 +48,6 @@ from sqlalchemy_utils.functions import create_database, database_exists
 
 from invenio_pidrelations import InvenioPIDRelations
 from invenio_pidrelations.config import RelationType
-from invenio_pidrelations.contrib.versioning import PIDNodeVersioning
 from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.serializers.schemas import RelationSchema
 from invenio_pidrelations.utils import resolve_relation_type_config
@@ -339,7 +338,8 @@ def custom_relation_schema(app):
                      'invenio_pidrelations.api:PIDConcept',
                      CustomRelationSchema),
         RelationType(2, 'version', 'Version',
-                     'invenio_pidrelations.contrib.versioning:PIDNodeVersioning',
+                     'invenio_pidrelations.contrib.'
+                     'versioning:PIDNodeVersioning',
                      CustomRelationSchema),
     ]
     yield app
