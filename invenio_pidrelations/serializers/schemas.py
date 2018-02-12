@@ -27,7 +27,7 @@
 from marshmallow import Schema, fields
 
 from ..utils import resolve_relation_type_config
-from .utils import serialize_relations
+from ..config import RelationType
 
 
 class PIDSchema(Schema):
@@ -101,7 +101,10 @@ class RelationSchema(Schema):
 
     def dump_type(self, obj):
         """Dump the text name of the relation."""
-        return resolve_relation_type_config(obj.relation_type).name
+        if not isinstance(obj.relation_type, RelationType):
+            return resolve_relation_type_config(obj.relation_type).name
+        else:
+            return obj.relation_type
 
     def dump_parent(self, obj):
         """Dump the parent of a PID."""

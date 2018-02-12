@@ -55,18 +55,19 @@ def resolve_relation_type_config(value):
     if isinstance(value, six.string_types):
         try:
             obj = next(rt for rt in relation_types if rt.name == value)
-        except StopIteration as e:
+        except StopIteration:
             raise ValueError("Relation name '{0}' is not configured.".format(
                 value))
 
     elif isinstance(value, int):
         try:
             obj = next(rt for rt in relation_types if rt.id == value)
-        except StopIteration as e:
+        except StopIteration:
             raise ValueError("Relation ID {0} is not configured.".format(
                 value))
     else:
-        raise ValueError("Type of value '{0}' is not supported for resolving.")
+        raise ValueError("Type of value '{0}' is not supported for resolving.".
+                         format(value))
     api_class = obj_or_import_string(obj.api)
     schema_class = obj_or_import_string(obj.schema)
     return obj.__class__(obj.id, obj.name, obj.label, api_class, schema_class)

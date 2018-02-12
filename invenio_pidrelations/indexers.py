@@ -34,6 +34,8 @@ from .serializers.utils import serialize_relations
 def index_relations(sender, pid_type, json=None,
                     record=None, index=None, **kwargs):
     """Add relations to the indexed record."""
+    if not json:
+        json = {}
     pid = PersistentIdentifier.query.filter(
         PersistentIdentifier.object_uuid == record.id,
         PersistentIdentifier.pid_type == pid_type,

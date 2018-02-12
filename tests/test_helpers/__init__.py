@@ -61,3 +61,26 @@ def create_pids(number, prefix='', status=PIDStatus.REGISTERED):
 def filter_pids(pids, status):
     """Filter PIDs based on their status."""
     return [p for p in pids if p.status == status]
+
+
+def compare_dictionaries(dict1, dict2):
+    if dict1 is None or dict2 is None:
+        return False
+
+    if type(dict1) is not dict or type(dict2) is not dict:
+        return False
+
+    shared_keys = set(dict2.keys()) & set(dict2.keys())
+
+    if not (len(shared_keys) == len(dict1.keys()) and
+            len(shared_keys) == len(dict2.keys())):
+        return False
+
+    dicts_are_equal = True
+    for key in dict1.keys():
+        if type(dict1[key]) is dict:
+            dicts_are_equal = dicts_are_equal and \
+                compare_dictionaries(dict1[key], dict2[key])
+        else:
+            dicts_are_equal = dicts_are_equal and (dict1[key] == dict2[key])
+    return dicts_are_equal
