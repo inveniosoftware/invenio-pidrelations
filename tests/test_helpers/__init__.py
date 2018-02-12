@@ -64,6 +64,7 @@ def filter_pids(pids, status):
 
 
 def compare_dictionaries(dict1, dict2):
+    """Assert two dicts are equal."""
     if dict1 is None or dict2 is None:
         return False
 

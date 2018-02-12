@@ -212,8 +212,8 @@ def nested_pids_and_relations(app, db):
                                         status=PIDStatus.REGISTERED)
         pids[idx] = p
 
-    ORDERED = resolve_relation_type_config('ordered').id
-    UNORDERED = resolve_relation_type_config('unordered').id
+    # ORDERED = resolve_relation_type_config('ordered').id
+    # UNORDERED = resolve_relation_type_config('unordered').id
     VERSION = resolve_relation_type_config('version').id
 
     #    1  (Version)
@@ -331,13 +331,7 @@ def custom_relation_schema(app):
     """Fixture for PID relations config with custom schemas."""
     orig = app.config['PIDRELATIONS_RELATION_TYPES']
     app.config['PIDRELATIONS_RELATION_TYPES'] = [
-        RelationType(0, 'ordered', 'Ordered',
-                     'invenio_pidrelations.api:PIDConceptOrdered',
-                     CustomRelationSchema),
-        RelationType(1, 'unordered', 'Unordered',
-                     'invenio_pidrelations.api:PIDConcept',
-                     CustomRelationSchema),
-        RelationType(2, 'version', 'Version',
+        RelationType(0, 'version', 'Version',
                      'invenio_pidrelations.contrib.'
                      'versioning:PIDNodeVersioning',
                      CustomRelationSchema),

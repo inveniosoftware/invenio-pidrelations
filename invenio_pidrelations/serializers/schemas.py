@@ -26,8 +26,8 @@
 
 from marshmallow import Schema, fields
 
-from ..utils import resolve_relation_type_config
 from ..config import RelationType
+from ..utils import resolve_relation_type_config
 
 
 class PIDSchema(Schema):
