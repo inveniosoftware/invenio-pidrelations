@@ -73,7 +73,7 @@ def test_query_status(db, version_pids, status, filt):
         PersistentIdentifier.id == PIDRelation.child_id
     ).filter(
         PIDRelation.parent_id == version_pids[0]['parent'].id
-    ).status(status).all()
+    ).status(status).ordered('asc').all()
     assert result == filt(version_pids[0]['children'])
 
     # test with double join (parent and child PID)

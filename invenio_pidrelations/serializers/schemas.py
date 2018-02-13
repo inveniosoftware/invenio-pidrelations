@@ -92,7 +92,8 @@ class RelationSchema(Schema):
         """
         if self._is_child(obj) and isinstance(obj, PIDNodeOrdered):
             if obj.children.count() > 0:
-                return obj.children.all()[-1] == self.context['pid']
+                return obj.children.ordered('asc').all()[-1] == \
+                    self.context['pid']
             elif obj.draft_child:
                 return obj.draft_child == self.context['pid']
             else:
@@ -115,5 +116,6 @@ class RelationSchema(Schema):
 
     def dump_children(self, obj):
         """Dump the siblings of a PID."""
-        data, errors = PIDSchema(many=True).dump(obj.children.all())
+        data, errors = PIDSchema(many=True).dump(
+            obj.children.ordered('asc').all())
         return data
