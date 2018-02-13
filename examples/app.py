@@ -75,8 +75,6 @@ from invenio_pidrelations.contrib.versioning import PIDNodeVersioning, \
 from invenio_pidrelations.indexers import index_relations
 from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.utils import resolve_relation_type_config
-from test_helpers import PIDRelationsMixin
-
 
 # Create Flask application
 app = Flask(__name__, template_folder='.')
@@ -102,7 +100,7 @@ record_resolver = Resolver(
 )
 
 
-class SimpleRecordSchema(Schema, PIDRelationsMixin):
+class SimpleRecordSchema(Schema):
     """Tiny schema for our simple record."""
 
     recid = fields.Str()

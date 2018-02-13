@@ -245,22 +245,24 @@ def nested_pids_and_relations(app, db):
     # Define the expected PID relation tree for of the PIDs
     expected_relations = {}
     expected_relations[4] = {
-        'relations': {
+        u'relations': {
             'version': [
-                {
-                    'children': [{'pid_type': 'recid', 'pid_value': '2'},
-                                 {'pid_type': 'recid', 'pid_value': '3'},
-                                 {'pid_type': 'recid', 'pid_value': '4'}],
-                    'is_child': True,
-                    'index': 2,
-                    'previous': {'pid_type': 'recid', 'pid_value': '3'},
-                    'next': None,
-                    'is_last': True,
-                    'is_ordered': True,
-                    'is_parent': False,
-                    'parent': {'pid_type': 'recid', 'pid_value': '1'},
-                    'type': 'version'
-                }
+                {u'children': [{u'pid_type': u'recid',
+                                u'pid_value': u'2'},
+                               {u'pid_type': u'recid',
+                                u'pid_value': u'3'},
+                               {u'pid_type': u'recid',
+                                u'pid_value': u'4'}],
+                 u'index': 2,
+                 u'is_child': True,
+                 u'previous': {'pid_type': 'recid', 'pid_value': '3'},
+                 u'next': None,
+                 u'is_last': True,
+                 u'is_parent': False,
+                 u'parent': {u'pid_type': u'recid',
+                             u'pid_value': u'1'},
+                 u'type': 'version'
+                 }
             ],
             # 'ordered': [
             #     {

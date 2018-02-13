@@ -24,11 +24,7 @@
 
 """Schema tests."""
 
-from marshmallow import Schema, fields
-
-from invenio_pidrelations.models import PIDRelation
-from invenio_pidrelations.serializers.schemas import RelationSchema
-from invenio_pidrelations.serializers.utils import serialize_relations
+from marshmallow import Schema
 from test_helpers import PIDRelationsMixin
 
 
@@ -48,8 +44,6 @@ def test_schema(app, nested_pids_and_relations):
         input_data = {'pid': pid}
         schema.context['pid'] = pid
         data, errors = schema.dump(input_data)
-        import ipdb
-        ipdb.set_trace()
         assert not errors
         assert expected == data  # Test against hand-crafted fixture
     pass

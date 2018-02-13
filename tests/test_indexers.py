@@ -29,10 +29,8 @@ from invenio_pidstore.providers.recordid import RecordIdProvider
 from invenio_records.api import Record
 from test_helpers import compare_dictionaries
 
-from invenio_pidrelations.config import RelationType
 from invenio_pidrelations.contrib.versioning import PIDNodeVersioning
 from invenio_pidrelations.indexers import index_relations
-from invenio_pidrelations.serializers.schemas import RelationSchema
 
 
 def test_index_relations(app, db):
@@ -56,14 +54,19 @@ def test_index_relations(app, db):
     db.session.commit()
     output = index_relations(app, 'recid', record=rec_v1)
     expected_output = \
-        {'relations':
-            {'version': [{u'children':
-                         # first child should be printed
-                          [{'pid_type': 'recid', 'pid_value': '2'}],
-                          u'type': RelationType(id=0, name='version',
-                                                label='Version',
-                                                api=PIDNodeVersioning,
-                                                schema=RelationSchema)}]}}
+        {'relations': {
+            'version': [{
+                u'children': [{u'pid_type': u'recid',
+                               u'pid_value': u'2'}],
+                u'index': 0,
+                u'is_child': True,
+                u'is_last': True,
+                u'is_parent': False,
+                u'next': None,
+                u'parent': {u'pid_type': u'recid',
+                            u'pid_value': u'1'},
+                u'previous': None,
+                u'type': 'version'}]}}
     assert compare_dictionaries(output, expected_output)
     # add second child to the relation
     rec_v2 = Record.create(data_v2)
@@ -73,13 +76,20 @@ def test_index_relations(app, db):
     db.session.commit()
     output = index_relations(app, 'recid', record=rec_v2)
     expected_output = \
-        {'relations':
-            {'version': [{u'children':
-                          [{'pid_type': 'recid', 'pid_value': '2'},
-                           # second child should be printed
-                           {'pid_type': 'recid', 'pid_value': '3'}],
-                          u'type': RelationType(id=0, name='version',
-                                                label='Version',
-                                                api=PIDNodeVersioning,
-                                                schema=RelationSchema)}]}}
+        {'relations': {
+            'version': [{
+                u'children': [{u'pid_type': u'recid',
+                               u'pid_value': u'2'},
+                              {u'pid_type': u'recid',
+                               u'pid_value': u'3'}],
+                u'index': 1,
+                u'is_child': True,
+                u'is_last': True,
+                u'is_parent': False,
+                u'next': None,
+                u'parent': {u'pid_type': u'recid',
+                            u'pid_value': u'1'},
+                u'previous': {u'pid_type': u'recid',
+                              u'pid_value': u'2'},
+                u'type': 'version'}]}}
     assert compare_dictionaries(output, expected_output)
