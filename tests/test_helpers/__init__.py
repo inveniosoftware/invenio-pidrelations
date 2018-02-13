@@ -24,11 +24,13 @@
 
 """Test helpers."""
 
+from marshmallow import Schema, fields
 import pytest
 
 from invenio_pidstore.models import PIDStatus, PersistentIdentifier
 from invenio_pidstore.fetchers import FetchedPID
 from invenio_pidstore.providers.recordid import RecordIdProvider
+from invenio_pidrelations.serializers.utils import serialize_relations
 
 
 def pid_to_fetched_recid(pid):
@@ -85,3 +87,14 @@ def compare_dictionaries(dict1, dict2):
         else:
             dicts_are_equal = dicts_are_equal and (dict1[key] == dict2[key])
     return dicts_are_equal
+
+
+class PIDRelationsMixin(object):
+    """Mixin for easy inclusion of relations information in Record schemas."""
+
+    relations = fields.Method('dump_relations')
+
+    def dump_relations(self, obj):
+        """Dump the relations to a dictionary."""
+        pid = self.context['pid']
+        return serialize_relations(pid)

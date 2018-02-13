@@ -29,17 +29,7 @@ from marshmallow import Schema, fields
 from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.serializers.schemas import RelationSchema
 from invenio_pidrelations.serializers.utils import serialize_relations
-
-
-class PIDRelationsMixin(object):
-    """Mixin for easy inclusion of relations information in Record schemas."""
-
-    relations = fields.Method('dump_relations')
-
-    def dump_relations(self, obj):
-        """Dump the relations to a dictionary."""
-        pid = self.context['pid']
-        return serialize_relations(pid)
+from test_helpers import PIDRelationsMixin
 
 
 class SampleRecordSchema(Schema, PIDRelationsMixin):
