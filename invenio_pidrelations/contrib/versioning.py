@@ -76,9 +76,9 @@ class PIDNodeVersioning(PIDNodeOrdered):
         return super(PIDNodeVersioning, self).\
             children.status(PIDStatus.REGISTERED)
 
-    def insert_child(self, child, index=-1):
+    def insert_child(self, child_pid, index=-1):
         """Insert a Version child PID."""
-        if child.status != PIDStatus.REGISTERED:
+        if child_pid.status != PIDStatus.REGISTERED:
             raise PIDRelationConsistencyError(
                 "Version PIDs should have status 'REGISTERED'. Use "
                 "insert_draft_child to insert 'RESERVED' draft PID.")
@@ -88,21 +88,22 @@ class PIDNodeVersioning(PIDNodeOrdered):
             draft = self.draft_child
             if draft and index == -1:
                 index = self.index(draft)
-            super(PIDNodeVersioning, self).insert_child(child, index=index)
+            super(PIDNodeVersioning, self).insert_child(child_pid, index=index)
             self.update_redirect()
 
-    def remove_child(self, child):
+    def remove_child(self, child_pid):
         """Remove a Version child PID.
 
         Extends the base method call by redirecting from the parent to the
         last child.
         """
-        if child.status == PIDStatus.RESERVED:
+        if child_pid.status == PIDStatus.RESERVED:
             raise PIDRelationConsistencyError(
                 "Version PIDs should not have status 'RESERVED'. Use "
                 "remove_draft_child to remove a draft PID.")
         with db.session.begin_nested():
-            super(PIDNodeVersioning, self).remove_child(child, reorder=True)
+            super(PIDNodeVersioning, self).remove_child(child_pid,
+                                                        reorder=True)
             self.update_redirect()
 
     @property
@@ -123,15 +124,16 @@ class PIDNodeVersioning(PIDNodeOrdered):
         else:
             return None
 
-    def insert_draft_child(self, child):
+    def insert_draft_child(self, child_pid):
         """Insert a draft child to versioning."""
-        if child.status != PIDStatus.RESERVED:
+        if child_pid.status != PIDStatus.RESERVED:
             raise PIDRelationConsistencyError(
                 "Draft child should have status 'RESERVED'")
 
         if not self.draft_child:
             with db.session.begin_nested():
-                super(PIDNodeVersioning, self).insert_child(child, index=-1)
+                super(PIDNodeVersioning, self).insert_child(child_pid,
+                                                            index=-1)
         else:
             raise PIDRelationConsistencyError(
                 "Draft child already exists for this relation: {0}".format(

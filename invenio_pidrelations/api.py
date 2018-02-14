@@ -108,6 +108,21 @@ class PIDNode(object):
             child=child_pid,
             relation_type=self.relation_type.id).one()
 
+    def _check_child_limits(self, child_pid):
+        """Check that inserting a child is within the limits."""
+        if self.max_children is not None and \
+                self.children.count() >= self.max_children:
+            raise PIDRelationConsistencyError(
+                "Max number of children is set to {}.".
+                format(self.max_children))
+        if self.max_parents is not None and \
+                PIDRelation.query.filter_by(
+                    child=child_pid,
+                    relation_type=self.relation_type.id)\
+                .count() >= self.max_parents:
+            raise PIDRelationConsistencyError(
+                "This pid already has the maximum number of parents.")
+
     def _connected_pids(self, from_parent=True):
         """Follow a relationship to find connected PIDs.abs.
 
@@ -166,19 +181,7 @@ class PIDNode(object):
 
     def insert_child(self, child_pid):
         """Add the given PID to the list of children PIDs."""
-        if self.max_children is not None and \
-                self.children.count() >= self.max_children:
-            raise PIDRelationConsistencyError(
-                "Max number of children is set to {}.".
-                format(self.max_children))
-        if self.max_parents is not None and \
-                PIDRelation.query.filter_by(
-                    child=child_pid,
-                    relation_type=self.relation_type.id)\
-                .count() >= self.max_parents:
-            raise PIDRelationConsistencyError(
-                "This pid already has the maximum number of parents.")
-
+        self._check_child_limits(child_pid)
         try:
             # TODO: Here add the check for the max parents and the max children
             with db.session.begin_nested():
@@ -275,6 +278,7 @@ class PIDNodeOrdered(PIDNode):
                   have PIDRelation.index information.
 
         """
+        self._check_child_limits(child_pid)
         if index is None:
             index = -1
         try:
