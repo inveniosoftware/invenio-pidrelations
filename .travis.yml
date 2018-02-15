@@ -35,10 +35,33 @@ matrix:
 cache:
   - pip
 
+services:
+    - mysql
+    - postgresql
+
+# Note: dist/sudo/api is required for MySQL 5.6 which adds support for
+# fractional seconds in datetime columns.
+dist: trusty
+sudo: required
+addons:
+  postgresql: "9.4"
+  apt:
+    packages:
+      - mysql-server-5.6
+      - mysql-client-core-5.6
+      - mysql-client-5.6
+
+
 env:
-  - REQUIREMENTS=lowest
-  - REQUIREMENTS=release DEPLOY=true
-  - REQUIREMENTS=devel
+  - REQUIREMENTS=lowest EXTRAS=mysql SQLALCHEMY_DATABASE_URI="mysql+pymysql://travis@localhost:3306/invenio"
+  - REQUIREMENTS=lowest EXTRAS=postgresql SQLALCHEMY_DATABASE_URI="postgresql+psycopg2://postgres@localhost:5432/invenio"
+  - REQUIREMENTS=lowest EXTRAS=sqlite SQLALCHEMY_DATABASE_URI="sqlite:///test.db"
+  - REQUIREMENTS=release EXTRAS=mysql SQLALCHEMY_DATABASE_URI="mysql+pymysql://travis@localhost:3306/invenio"
+  - REQUIREMENTS=release EXTRAS=postgresql SQLALCHEMY_DATABASE_URI="postgresql+psycopg2://postgres@localhost:5432/invenio" DEPLOY=true
+  - REQUIREMENTS=release EXTRAS=sqlite SQLALCHEMY_DATABASE_URI="sqlite:///test.db"
+  - REQUIREMENTS=devel EXTRAS=mysql SQLALCHEMY_DATABASE_URI="mysql+pymysql://travis@localhost:3306/invenio"
+  - REQUIREMENTS=devel EXTRAS=postgresql SQLALCHEMY_DATABASE_URI="postgresql+psycopg2://postgres@localhost:5432/invenio"
+  - REQUIREMENTS=devel EXTRAS=sqlite SQLALCHEMY_DATABASE_URI="sqlite:///test.db"
 
 python:
   - "2.7"
@@ -47,13 +70,15 @@ python:
 before_install:
   - "travis_retry pip install --upgrade pip setuptools py"
   - "travis_retry pip install twine wheel coveralls requirements-builder"
-  - "requirements-builder --level=min setup.py > .travis-lowest-requirements.txt"
-  - "requirements-builder --level=pypi setup.py > .travis-release-requirements.txt"
-  - "requirements-builder --level=dev --req requirements-devel.txt setup.py > .travis-devel-requirements.txt"
+  - "requirements-builder -e records,indexer,${EXTRAS} --level=min setup.py > .travis-lowest-requirements.txt"
+  - "requirements-builder -e records,indexer,${EXTRAS} --level=pypi setup.py > .travis-release-requirements.txt"
+  - "requirements-builder -e records,indexer,${EXTRAS} --level=dev --req requirements-devel.txt setup.py > .travis-devel-requirements.txt"
+  - "mysql -e 'CREATE DATABASE IF NOT EXISTS invenio;' -uroot"
+  - "psql -c 'CREATE DATABASE invenio;' -U postgres"
 
 install:
   - "travis_retry pip install -r .travis-${REQUIREMENTS}-requirements.txt"
-  - "travis_retry pip install -e .[all]"
+  - "travis_retry pip install -e .[all,${EXTRAS}]"
 
 script:
   - "./run-tests.sh"

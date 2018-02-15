@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # This file is part of Invenio.
 # Copyright (C) 2017 CERN.
@@ -22,12 +21,20 @@
 # waive the privileges and immunities granted to it by virtue of its status
 # as an Intergovernmental Organization or submit itself to any jurisdiction.
 
-"""Version information for Invenio-PIDRelations.
+"""Create pidrelations branch."""
 
-This file is imported by ``invenio_pidrelations.__init__``,
-and parsed by ``setup.py``.
-"""
+import sqlalchemy as sa
+from alembic import op
 
-from __future__ import absolute_import, print_function
+revision = '2216c32d7059'
+down_revision = None
+branch_labels = (u'invenio_pidrelations',)
+depends_on = '999c62899c20'  # invenio-pidstore create tables
 
-__version__ = '1.0.0a4'
+
+def upgrade():
+    """Upgrade database."""
+
+
+def downgrade():
+    """Downgrade database."""
