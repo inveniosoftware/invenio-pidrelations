@@ -22,45 +22,33 @@
 # waive the privileges and immunities granted to it by virtue of its status
 # as an Intergovernmental Organization or submit itself to any jurisdiction.
 
-"""Records contribution module tests."""
+"""PIDNodeDraft contribution module tests."""
 
 from __future__ import absolute_import, print_function
 
 import pytest
 from invenio_pidstore.models import PersistentIdentifier
+from test_helpers import create_pids, with_pid_and_fetched_pid
 
-from invenio_pidrelations.contrib.records import RecordDraft
+from invenio_pidrelations.contrib.draft import PIDNodeDraft
+from invenio_pidrelations.errors import PIDRelationConsistencyError
 from invenio_pidrelations.models import PIDRelation
 from invenio_pidrelations.utils import resolve_relation_type_config
 
 
-def test_record_draft(app, db):
+@with_pid_and_fetched_pid
+def test_record_draft(app, db, build_pid, recids):
     """Test RecordDraft API."""
 
-    assert PersistentIdentifier.query.count() == 0
-    assert PIDRelation.query.count() == 0
+    parent_pids = [PIDNodeDraft(pid) for pid in create_pids(2, 'parent')]
+    draft_pids = create_pids(2, 'draft')
 
-    d1 = PersistentIdentifier.create('depid', '1', object_type='rec')
-    r1 = PersistentIdentifier.create('recid', '1', object_type='rec')
-    assert PersistentIdentifier.query.count() == 2
+    # create a parent-draft relationship
+    parent_pids[0].insert_child(draft_pids[0])
 
-    RecordDraft.link(recid=r1, depid=d1)
-    assert PIDRelation.query.count() == 1
+    assert parent_pids[0].children.all() == [draft_pids[0]]
 
-    pr = PIDRelation.query.one()
-    RECORD_DRAFT = resolve_relation_type_config('record_draft').id
-    assert pr.relation_type == RECORD_DRAFT
-    assert pr.index is None
-    assert pr.parent == r1
-    assert pr.child == d1
-
-    d2 = PersistentIdentifier.create('depid', '2', object_type='rec')
-    r2 = PersistentIdentifier.create('recid', '2', object_type='rec')
-
-    with pytest.raises(Exception) as excinfo:
-        RecordDraft.link(recid=r1, depid=d2)
-    assert 'already has a depid as a draft' in str(excinfo.value)
-
-    with pytest.raises(Exception) as excinfo:
-        RecordDraft.link(recid=r2, depid=d1)
-    assert 'already is a draft of a recid' in str(excinfo.value)
+    # try to create invalid additional parent-draft relationships
+    with pytest.raises(PIDRelationConsistencyError):
+        parent_pids[0].insert_child(draft_pids[1])
+        parent_pids[1].insert_child(draft_pids[0])

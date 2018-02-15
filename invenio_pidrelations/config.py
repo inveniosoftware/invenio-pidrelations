@@ -30,37 +30,10 @@ RelationType = namedtuple('RelationType',
                           ['id', 'name', 'label', 'api', 'schema'])
 
 PIDRELATIONS_RELATION_TYPES = [
-    RelationType(0, 'ordered', 'Ordered',
-                 'invenio_pidrelations.api:PIDConceptOrdered',
+    RelationType(0, 'version', 'Version',
+                 'invenio_pidrelations.contrib.versioning:PIDNodeVersioning',
                  'invenio_pidrelations.serializers.schemas.RelationSchema'),
-    RelationType(1, 'unordered', 'Unordered',
-                 'invenio_pidrelations.api:PIDConcept',
-                 'invenio_pidrelations.serializers.schemas.RelationSchema'),
-    RelationType(2, 'version', 'Version',
-                 'invenio_pidrelations.contrib.versioning:PIDVersioning',
-                 'invenio_pidrelations.serializers.schemas.RelationSchema'),
-    RelationType(3, 'record_draft', 'Record Draft',
-                 'invenio_pidrelations.contrib.records:RecordDraft',
+    RelationType(1, 'record_draft', 'Record Draft',
+                 'invenio_pidrelations.contrib.draft:PIDNodeDraft',
                  'invenio_pidrelations.serializers.schemas.RelationSchema'),
 ]
-
-
-PIDRELATIONS_PRIMARY_PID_TYPE = 'recid'
-"""Default PID type for relations."""
-
-PIDRELATIONS_INDEX_RELATIONS = False
-"""Enable or disable relations indexing."""
-
-PIDRELATIONS_DEFAULT_VALUE = 'foobar'
-"""Default value for the application."""
-
-PIDRELATIONS_INDEXED_RELATIONS = dict(
-    recid=dict(
-        field='version',
-        api='invenio_pidrelations.contrib.versioning:PIDVersioning',
-        # FIXME: for now the API does not provide any way to know if a relation
-        # is ordered or not. Thus we write it here.
-        ordered=True,
-    )
-)
-"""Default PID fetcher."""

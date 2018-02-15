@@ -26,14 +26,9 @@
 
 from __future__ import absolute_import, print_function
 
-from copy import deepcopy
-
-from invenio_indexer.signals import before_record_index
 from werkzeug.utils import cached_property
 
 from invenio_pidrelations import config
-from invenio_pidrelations.indexers import index_relations
-from invenio_pidrelations.utils import obj_or_import_string
 
 
 class _InvenioPIDRelationsState(object):
@@ -46,20 +41,6 @@ class _InvenioPIDRelationsState(object):
     @cached_property
     def relation_types(self):
         return self.app.config.get('PIDRELATIONS_RELATION_TYPES', {})
-
-    @cached_property
-    def primary_pid_type(self):
-        return self.app.config.get('PIDRELATIONS_PRIMARY_PID_TYPE')
-
-    def indexed_relations(self):
-        """Load the configuration for indexed relations."""
-        indexed = self.app.config.get('PIDRELATIONS_INDEXED_RELATIONS')
-        if not indexed:
-            return {}
-        result = deepcopy(indexed)
-        for pid_value, conf in result.items():
-            conf.update(dict(api=obj_or_import_string(conf['api'])))
-        return result
 
 
 class InvenioPIDRelations(object):
@@ -74,10 +55,6 @@ class InvenioPIDRelations(object):
         """Flask application initialization."""
         self.init_config(app)
         app.extensions['invenio-pidrelations'] = _InvenioPIDRelationsState(app)
-
-        # Register indexers the default indexer if necessary
-        if app.config.get('PIDRELATIONS_REGISTER_DEFAULT_INDEXER'):
-            before_record_index.connect(index_relations, sender=app)
 
     def init_config(self, app):
         """Initialize configuration."""

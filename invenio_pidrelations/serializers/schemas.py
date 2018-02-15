@@ -26,8 +26,9 @@
 
 from marshmallow import Schema, fields
 
+from ..api import PIDNodeOrdered
+from ..config import RelationType
 from ..utils import resolve_relation_type_config
-from .utils import serialize_relations
 
 
 class PIDSchema(Schema):
@@ -61,37 +62,38 @@ class RelationSchema(Schema):
 
     def dump_next(self, obj):
         """Dump the parent of a PID."""
-        if self._is_child(obj):
-            return self._dump_relative(obj.next)
+        if self._is_child(obj) and not obj.is_last_child(self.context['pid']):
+            return self._dump_relative(obj.next_child(self.context['pid']))
 
     def dump_previous(self, obj):
         """Dump the parent of a PID."""
-        if self._is_child(obj):
-            return self._dump_relative(obj.previous)
+        if self._is_child(obj) and obj.index(self.context['pid']) > 0:
+            return self._dump_relative(obj.previous_child(self.context['pid']))
 
     def dump_index(self, obj):
         """Dump the index of the child in the relation."""
-        if obj.is_ordered and self._is_child(obj):
-            return obj.index
+        if isinstance(obj, PIDNodeOrdered) and self._is_child(obj):
+            return obj.index(self.context['pid'])
         else:
             return None
 
     def _is_parent(self, obj):
         """Check if the PID from the context is the parent in the relation."""
-        return obj.parent == self.context['pid']
+        return self.context['pid'] == obj.pid
 
     def _is_child(self, obj):
         """Check if the PID from the context is the child in the relation."""
-        return obj.child == self.context['pid']
+        return self.context['pid'] in obj.children.all()
 
     def dump_is_last(self, obj):
         """Dump the boolean stating if the child in the relation is last.
 
         Dumps `None` for parent serialization.
         """
-        if self._is_child(obj) and obj.is_ordered:
+        if self._is_child(obj) and isinstance(obj, PIDNodeOrdered):
             if obj.children.count() > 0:
-                return obj.children.all()[-1] == self.context['pid']
+                return obj.children.ordered('asc').all()[-1] == \
+                    self.context['pid']
             elif obj.draft_child:
                 return obj.draft_child == self.context['pid']
             else:
@@ -101,24 +103,19 @@ class RelationSchema(Schema):
 
     def dump_type(self, obj):
         """Dump the text name of the relation."""
-        return resolve_relation_type_config(obj.relation_type).name
+        if not isinstance(obj.relation_type, RelationType):
+            return resolve_relation_type_config(obj.relation_type).name
+        else:
+            return obj.relation_type.name
 
     def dump_parent(self, obj):
         """Dump the parent of a PID."""
-        return self._dump_relative(obj.parent)
+        if not self._is_parent(obj):
+            return self._dump_relative(obj.pid)
+        return None
 
     def dump_children(self, obj):
         """Dump the siblings of a PID."""
-        data, errors = PIDSchema(many=True).dump(obj.children.all())
+        data, errors = PIDSchema(many=True).dump(
+            obj.children.ordered('asc').all())
         return data
-
-
-class PIDRelationsMixin(object):
-    """Mixin for easy inclusion of relations information in Record schemas."""
-
-    relations = fields.Method('dump_relations')
-
-    def dump_relations(self, obj):
-        """Dump the relations to a dictionary."""
-        pid = self.context['pid']
-        return serialize_relations(pid)

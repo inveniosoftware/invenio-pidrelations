@@ -28,125 +28,114 @@ from __future__ import absolute_import, print_function
 
 from flask import Blueprint
 from invenio_db import db
-from invenio_pidstore.models import PersistentIdentifier, PIDStatus
+from invenio_pidstore.models import PIDStatus
 
-from ..api import PIDConceptOrdered
-from ..models import PIDRelation
+from invenio_pidrelations.contrib.draft import PIDNodeDraft
+
+from ..api import PIDNodeOrdered
+from ..errors import PIDRelationConsistencyError
 from ..utils import resolve_relation_type_config
 
 
-class PIDVersioning(PIDConceptOrdered):
+class PIDNodeVersioning(PIDNodeOrdered):
     """API for PID versioning relations.
 
-    - Adds automatic redirection handling for Parent-LastChild
-    - Sets stricter method signatures, e.g.: 'index' is mandatory parameter
-        when calling 'insert'.
+    parents (max: 1): a PID linked to all the versions of a record
+                      and always redirecting to its last version.
+    children (max: unlimited): PIDs of the different versions of a record.
+
+    Children PIDs are separated in two categories: RESERVED and REGISTERED.
+
+    There can be only one RESERVED PID. It is considered as the "draft" PID,
+    i.e. the next version to publish. This draft/RESERVED PID is the parent PID
+    of a "deposit" PID (see invenio-deposit). The PIDNodeDraft API is used in
+    order to manipulate the relation between the draft PID and its child
+    deposit PID.
+
+    REGISTERED PIDs are published record PIDs which each represents a
+    version of the original record.
+
+    The parent PID's status is RESERVED as long as no Version is published,
+    i.e. REGISTERED.
     """
 
-    def __init__(self, child=None, parent=None, draft_deposit=None,
-                 draft_record=None, relation=None):
-        """Create a PID versioning API."""
-        self.relation_type = resolve_relation_type_config('version').id
-        if relation is not None:
-            if relation.relation_type != self.relation_type:
-                raise ValueError("Provided PID relation ({0}) is not a "
-                                 "version relation.".format(relation))
-            super(PIDVersioning, self).__init__(relation=relation)
-        else:
-            super(PIDVersioning, self).__init__(
-                child=child, parent=parent, relation_type=self.relation_type,
-                relation=relation)
-        if self.child:
-            self.relation = PIDRelation.query.filter(
-                PIDRelation.child_id == self.child.id,
-                PIDRelation.relation_type == self.relation_type,
-            ).one_or_none()
+    def __init__(self, pid):
+        """Create a PID versioning API.
 
-    def insert_child(self, child, index=-1):
-        """Insert child into versioning scheme.
-
-        Parameter 'index' is has to be an integer.
+        :param pid: either the parent PID or a specific record version PID.
         """
-        if index is None:
-            raise ValueError(
-                "Incorrect value for child index: {0}".format(index))
-
-        with db.session.begin_nested():
-            super(PIDVersioning, self).insert_child(child, index=index)
-            self.parent.redirect(child)
-
-    def remove_child(self, child):
-        """Remove a child from a versioning scheme.
-
-        Extends the base method call with always reordering after removal and
-        adding a redirection from the parent to the last child.
-        """
-        with db.session.begin_nested():
-            super(PIDVersioning, self).remove_child(child, reorder=True)
-            if self.last_child is not None:
-                self.parent.redirect(self.last_child)
-
-    def create_parent(self, pid_value, status=PIDStatus.REGISTERED,
-                      redirect=True):
-        """Create a parent PID from a child and create a new PID versioning."""
-        if self.has_parents:
-            raise Exception("Parent already exists for this child.")
-        self.parent = PersistentIdentifier.create(
-            self.child.pid_type, pid_value,
-            object_type=self.child.object_type,
-            status=status)
-        self.relation = PIDRelation.create(
-            self.parent, self.child, self.relation_type, 0)
-        if redirect:
-            self.parent.redirect(self.child)
+        self.relation_type = resolve_relation_type_config('version')
+        super(PIDNodeVersioning, self).__init__(
+            pid=pid, relation_type=self.relation_type,
+            max_parents=1, max_children=None
+        )
 
     @property
-    def exists(self):
-        """Check if the PID Versioning exists."""
-        return self.parent is not None
+    def children(self):
+        """Children of the parent."""
+        return super(PIDNodeVersioning, self).\
+            children.status(PIDStatus.REGISTERED)
 
-    @property
-    def last_child(self):
-        """
-        Get the latest PID as pointed by the Head PID.
+    def insert_child(self, child_pid, index=-1):
+        """Insert a Version child PID."""
+        if child_pid.status != PIDStatus.REGISTERED:
+            raise PIDRelationConsistencyError(
+                "Version PIDs should have status 'REGISTERED'. Use "
+                "insert_draft_child to insert 'RESERVED' draft PID.")
+        with db.session.begin_nested():
+            # if there is a draft and "child" is inserted as the last version,
+            # it should be inserted before the draft.
+            draft = self.draft_child
+            if draft and index == -1:
+                index = self.index(draft)
+            super(PIDNodeVersioning, self).insert_child(child_pid, index=index)
+            self.update_redirect()
 
-        If the 'pid' is a Head PID, return the latest of its children.
-        If the 'pid' is a Version PID, return the latest of its siblings.
-        Return None for the non-versioned PIDs.
+    def remove_child(self, child_pid):
+        """Remove a Version child PID.
+
+        Extends the base method call by redirecting from the parent to the
+        last child.
         """
-        return self.get_children(ordered=False,
-                                 pid_status=PIDStatus.REGISTERED).filter(
-                PIDRelation.index.isnot(None)).order_by(
-                    PIDRelation.index.desc()).first()
+        if child_pid.status == PIDStatus.RESERVED:
+            raise PIDRelationConsistencyError(
+                "Version PIDs should not have status 'RESERVED'. Use "
+                "remove_draft_child to remove a draft PID.")
+        with db.session.begin_nested():
+            super(PIDNodeVersioning, self).remove_child(child_pid,
+                                                        reorder=True)
+            self.update_redirect()
 
     @property
     def draft_child(self):
-        """Get the last non-registered child."""
-        return self.get_children(ordered=False).filter(
-                PIDRelation.index.isnot(None),
-                PersistentIdentifier.status == PIDStatus.RESERVED).order_by(
-                    PIDRelation.index.desc()).one_or_none()
+        """Get the draft (RESERVED) child."""
+        return super(PIDNodeVersioning, self).children.status(
+            PIDStatus.RESERVED
+        ).one_or_none()
 
     @property
     def draft_child_deposit(self):
-        """
-        Get the deposit of the draft child.
+        """Get the deposit PID of the draft child.
 
-        Return `None` if no new-version deposit exists.
+        Return `None` if no draft child PID exists.
         """
-        from invenio_pidrelations.contrib.records import RecordDraft
         if self.draft_child:
-            return RecordDraft.get_draft(self.draft_child)
+            return PIDNodeDraft(self.draft_child).children.one_or_none()
         else:
             return None
 
-    def insert_draft_child(self, child):
+    def insert_draft_child(self, child_pid):
         """Insert a draft child to versioning."""
+        if child_pid.status != PIDStatus.RESERVED:
+            raise PIDRelationConsistencyError(
+                "Draft child should have status 'RESERVED'")
+
         if not self.draft_child:
             with db.session.begin_nested():
-                super(PIDVersioning, self).insert_child(child, index=-1)
+                super(PIDNodeVersioning, self).insert_child(child_pid,
+                                                            index=-1)
         else:
-            raise Exception(
+            raise PIDRelationConsistencyError(
                 "Draft child already exists for this relation: {0}".format(
                     self.draft_child))
 
@@ -154,20 +143,27 @@ class PIDVersioning(PIDConceptOrdered):
         """Remove the draft child from versioning."""
         if self.draft_child:
             with db.session.begin_nested():
-                super(PIDVersioning, self).remove_child(self.draft_child,
-                                                        reorder=True)
+                super(PIDNodeVersioning, self).remove_child(self.draft_child,
+                                                            reorder=True)
 
     def update_redirect(self):
-        """Update the parent redirect to the current last child."""
-        if self.last_child:
-            if self.parent.status == PIDStatus.RESERVED:
-                self.parent.register()
-            self.parent.redirect(self.last_child)
+        """Update the parent redirect to the current last child.
 
-    @property
-    def children(self):
-        """Children of the parent."""
-        return self.get_children(pid_status=PIDStatus.REGISTERED, ordered=True)
+        This method should be called on the parent PID node.
+
+        Use this method when the status of a PID changed (ex: draft changed
+        from RESERVED to REGISTERED)
+        """
+        if self.last_child:
+            self._resolved_pid.redirect(self.last_child)
+        elif any(map(lambda pid: pid.status not in [PIDStatus.DELETED,
+                                                    PIDStatus.REGISTERED,
+                                                    PIDStatus.RESERVED],
+                     super(PIDNodeVersioning, self).children.all())):
+            raise PIDRelationConsistencyError(
+                "Invalid relation state. Only REGISTERED, RESERVED "
+                "and DELETED PIDs are supported."
+            )
 
 
 versioning_blueprint = Blueprint(
@@ -178,15 +174,12 @@ versioning_blueprint = Blueprint(
 
 
 @versioning_blueprint.app_template_filter()
-def to_versioning_api(pid, child=True):
-    """Get PIDVersioning object."""
-    return PIDVersioning(
-        child=pid if child else None,
-        parent=pid if not child else None
-    )
+def to_versioning_api(pid):
+    """Get PIDNodeVersioning object."""
+    return PIDNodeVersioning(pid=pid)
 
 
 __all__ = (
-    'PIDVersioning',
+    'PIDNodeVersioning',
     'versioning_blueprint'
 )

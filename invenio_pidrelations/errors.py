@@ -22,7 +22,14 @@
 # waive the privileges and immunities granted to it by virtue of its status
 # as an Intergovernmental Organization or submit itself to any jurisdiction.
 
-invenio-indexer>=1.0.0a7
-invenio-records>=1.0.0b1
-invenio-search>=1.0.0a9
-invenio-records-ui>=1.0.0b2
+"""Errors for persistent identifiers."""
+
+from __future__ import absolute_import, print_function
+
+
+class PIDRelationError(Exception):
+    """Base class for PIDRelations errors."""
+
+
+class PIDRelationConsistencyError(PIDRelationError):
+    """Base class for relation consistency errors."""
