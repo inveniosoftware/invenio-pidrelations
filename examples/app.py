@@ -79,8 +79,6 @@ from invenio_pidrelations.utils import resolve_relation_type_config
 # Create Flask application
 app = Flask(__name__, template_folder='.')
 app.config.update(dict(
-    SQLALCHEMY_DATABASE_URI='postgresql+psycopg2://'
-                            'postgres2@localhost:5432/invenio',
     TEMPLATES_AUTO_RELOAD=True,
     CELERY_ALWAYS_EAGER=True,
     CELERY_RESULT_BACKEND='cache',
@@ -163,5 +161,5 @@ def record_minter(record_uuid, data):
     data['recid'] = provider.pid.pid_value
 
     versioning = PIDNodeVersioning(pid=parent_pid)
-    versioning.insert_child(child=provider.pid)
+    versioning.insert_child(child_pid=provider.pid)
     return provider.pid

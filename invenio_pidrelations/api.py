@@ -87,7 +87,14 @@ class PIDNode(object):
 
     def __init__(self, pid, relation_type,
                  max_children=None, max_parents=None):
-        """Constructor."""
+        """Constructor.
+
+        :param pid: the central PID of the node.
+        :param relation_type: one of the declared relation types from config.
+        :param max_children: maximum number of children allowed.
+        :param max_parents: maximum number of parents
+            for each child of the node.
+        """
         super(PIDNode, self).__init__()
         self.relation_type = relation_type
         self.pid = pid

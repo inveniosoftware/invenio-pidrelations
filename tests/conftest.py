@@ -212,8 +212,6 @@ def nested_pids_and_relations(app, db):
                                         status=PIDStatus.REGISTERED)
         pids[idx] = p
 
-    # ORDERED = resolve_relation_type_config('ordered').id
-    # UNORDERED = resolve_relation_type_config('unordered').id
     VERSION = resolve_relation_type_config('version').id
 
     #    1  (Version)
@@ -222,25 +220,6 @@ def nested_pids_and_relations(app, db):
     PIDRelation.create(pids[1], pids[2], VERSION, 0)
     PIDRelation.create(pids[1], pids[3], VERSION, 1)
     PIDRelation.create(pids[1], pids[4], VERSION, 2)
-
-    #    5  (Ordered)
-    #  / | \
-    # 6  4 7
-    # PIDRelation.create(pids[5], pids[6], ORDERED, 0)
-    # PIDRelation.create(pids[5], pids[4], ORDERED, 1)
-    # PIDRelation.create(pids[5], pids[7], ORDERED, 2)
-
-    # #    4  (Ordered)
-    # #  / |
-    # # 8  9
-    # PIDRelation.create(pids[4], pids[8], ORDERED, 0)
-    # PIDRelation.create(pids[4], pids[9], ORDERED, 1)
-
-    # #   10  (Unordered)
-    # #  / |
-    # # 4  11
-    # PIDRelation.create(pids[10], pids[4], UNORDERED, None)
-    # PIDRelation.create(pids[10], pids[11], UNORDERED, None)
 
     # Define the expected PID relation tree for of the PIDs
     expected_relations = {}
@@ -264,50 +243,6 @@ def nested_pids_and_relations(app, db):
                  u'type': 'version'
                  }
             ],
-            # 'ordered': [
-            #     {
-            #         'children': [{'pid_type': 'recid', 'pid_value': '6'},
-            #                      {'pid_type': 'recid', 'pid_value': '4'},
-            #                      {'pid_type': 'recid', 'pid_value': '7'}],
-            #         'is_child': True,
-            #         'index': 1,
-            #         'previous': {'pid_type': 'recid', 'pid_value': '6'},
-            #         'next': {'pid_type': 'recid', 'pid_value': '7'},
-            #         'is_last': False,
-            #         'is_ordered': True,
-            #         'is_parent': False,
-            #         'parent': {'pid_type': 'recid', 'pid_value': '5'},
-            #         'type': 'ordered'
-            #     },
-            #     {
-            #         'children': [{'pid_type': 'recid', 'pid_value': '8'},
-            #                      {'pid_type': 'recid', 'pid_value': '9'}],
-            #         'is_child': False,
-            #         'index': None,
-            #         'previous': None,
-            #         'next': None,
-            #         'is_last': None,
-            #         'is_ordered': True,
-            #         'is_parent': True,
-            #         'parent': {'pid_type': 'recid', 'pid_value': '4'},
-            #         'type': 'ordered'
-            #     }
-            # ],
-            # 'unordered': [
-            #     {
-            #         'children': [{'pid_type': 'recid', 'pid_value': '4'},
-            #                      {'pid_type': 'recid', 'pid_value': '11'}],
-            #         'is_child': True,
-            #         'index': None,
-            #         'previous': None,
-            #         'next': None,
-            #         'is_last': False,
-            #         'is_ordered': True,
-            #         'is_parent': False,
-            #         'parent': {'pid_type': 'recid', 'pid_value': '10'},
-            #         'type': 'unordered'
-            #     },
-            # ]
         }
     }
     return pids, expected_relations
@@ -340,28 +275,6 @@ def custom_relation_schema(app):
     ]
     yield app
     app.config['PIDRELATIONS_RELATION_TYPES'] = orig
-
-
-# @pytest.fixture()
-# def version_pids(app, db):
-#     """Versioned PIDs fixture with one parent and two versions."""
-#     h1 = PersistentIdentifier.create('recid', 'foobar', object_type='rec',
-#                                      status=PIDStatus.REGISTERED)
-#     h1v1 = PersistentIdentifier.create('recid', 'foobar.v1',
-#                                        object_type='rec',
-#                                        status=PIDStatus.REGISTERED)
-#     h1v2 = PersistentIdentifier.create('recid', 'foobar.v2',
-#                                        object_type='rec',
-#                                        status=PIDStatus.REGISTERED)
-#     pv = PIDNodeVersioning(parent=h1)
-#     pv.insert_child(h1v1)
-#     pv.insert_child(h1v2)
-#     db.session.commit()
-#     return {
-#         'h1': h1,
-#         'h1v1': h1v1,
-#         'h1v2': h1v2,
-#     }
 
 
 @pytest.fixture()

@@ -155,8 +155,6 @@ class PIDNodeVersioning(PIDNodeOrdered):
         from RESERVED to REGISTERED)
         """
         if self.last_child:
-            if self._resolved_pid.status == PIDStatus.RESERVED:
-                self._resolved_pid.register()
             self._resolved_pid.redirect(self.last_child)
         elif any(map(lambda pid: pid.status not in [PIDStatus.DELETED,
                                                     PIDStatus.REGISTERED,
