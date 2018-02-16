@@ -25,4 +25,58 @@
 Usage
 =====
 
-.. automodule:: invenio_pidrelations
+To demonstrate the usage of invenio-pidrelations we'll use the versioning example.
+First we will create a deposit, mint its PID and the parent PID and finally populate the versioning node.
+
+.. code-block:: python
+
+    from invenio_pidrelations.contrib.versioning import PIDNodeVersioning
+    from invenio_deposit.api import Deposit
+    from invenio_pidstore.providers.recordid import RecordIdProvider
+
+    # create a new deposit
+    new_deposit = Deposit.create({...})
+    # create the parent PID
+    parent_pid = RecordIdProvider.create(...,
+                                         status=PIDStatus.REGISTERED,
+                                         ...).pid
+    # create the PID of the new_deposit 
+    provider = RecordIdProvider.create('dep', new_deposit.id)
+    # create the versioning node, set the pid to the parent_pid
+    versioning_node = PIDNodeVersioning(pid=parent_pid)
+    # add the new_record PID to the node as a child
+    versioning_node.insert_draft_child(child_pid=provider.pid)
+
+The result will have the following structure:
+
+.. graphviz::
+
+    digraph {
+        {
+            "ParentPID" [ xlabel = "Registered" ];
+        }   
+        "ParentPID" -> "Draft" [ label = "record_draft", style = "dotted" ];
+    }
+
+When the first draft is published the parent PID status changes from Registered to Redirected, and now resolves to version 1.
+
+.. graphviz::
+
+    digraph {
+        {
+            "ParentPID" [ xlabel = "Redirected", style = "bold" ];
+            "Version1" [ style = "bold" ];
+        }
+        "ParentPID" -> "Version1" [ label = "version", style = "bold" ];
+    }
+
+The PIDNodeVersioning class used here has presets for the maximum number of parents and children, specifically it is set to 1 parent maximum and unlimited chilren.
+If one needs to create PID relations with different limits on the parent and children, the PIDNodeOrdered class can be used instead with different `max_parents` and `max_children` attributes in its constructor.
+For all PID relations classes there can be only a single draft child for each version chain.
+By default deleted versions are not removed from the chain to maintain the history of a record.
+
+Serializers
+-----------
+
+In order to save the relations between records and make them indexable, a serializer is used to print out all relations of a given PID.
+These are stored in Elasticsearch in the json form.

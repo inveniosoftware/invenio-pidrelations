@@ -33,6 +33,7 @@ Invenio-PIDRelations.
 .. toctree::
    :maxdepth: 2
 
+   overview
    installation
    configuration
    usage
