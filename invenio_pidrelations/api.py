@@ -29,6 +29,7 @@ from __future__ import absolute_import, print_function
 from flask_sqlalchemy import BaseQuery
 from invenio_db import db
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
+from sqlalchemy import and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import aliased
 from werkzeug.utils import cached_property
@@ -148,7 +149,10 @@ class PIDNode(object):
             [to_pid], db.session(), _filtered_pid_class=to_pid
         ).join(
             PIDRelation,
-            to_pid.id == to_relation
+            and_(
+                to_pid.id == to_relation,
+                PIDRelation.relation_type == self.relation_type.id
+            )
         )
         # accept both PersistentIdentifier models and fake PIDs with just
         # pid_value, pid_type as they are fetched with the PID fetcher.
