@@ -24,12 +24,12 @@
 
 """Test helpers."""
 
-from marshmallow import Schema, fields
 import pytest
-
-from invenio_pidstore.models import PIDStatus, PersistentIdentifier
 from invenio_pidstore.fetchers import FetchedPID
+from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 from invenio_pidstore.providers.recordid import RecordIdProvider
+from marshmallow import Schema, fields
+
 from invenio_pidrelations.serializers.utils import serialize_relations
 
 

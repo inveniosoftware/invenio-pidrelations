@@ -88,11 +88,13 @@ setup_requires = [
 
 install_requires = [
     'Flask-BabelEx>=0.9.2',
+    'Flask-OAuthlib>=0.9.3,<0.9.4',
     'invenio-pidstore>=1.0.0b1',
     'invenio-rest[cors]>=1.0.0a10',
     'SQLAlchemy>=1.0.9',
-    'marshmallow>=2.12.2',
-    'six>=1.10',
+    'marshmallow>=2.15.2',
+    'requests-oauthlib>=0.5.0,<1.2.0',
+    'six>=1.11',
 ]
 
 packages = find_packages()
