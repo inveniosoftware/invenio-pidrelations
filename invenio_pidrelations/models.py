@@ -36,6 +36,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import backref
 from sqlalchemy_utils.models import Timestamp
 
+from invenio_pidrelations.errors import PIDRelationConsistencyError
+
 _ = make_lazy_gettext(lambda: gettext)
 
 logger = logging.getLogger('invenio-pidrelations')
@@ -113,7 +115,7 @@ class PIDRelation(db.Model, Timestamp):
                           index=index)
                 db.session.add(obj)
         except IntegrityError:
-            raise Exception("PID Relation already exists.")
+            raise PIDRelationConsistencyError("PID Relation already exists.")
             # msg = "PIDRelation already exists: " \
             #       "{0} -> {1} ({2})".format(
             #         parent_pid, child_pid, relation_type)
