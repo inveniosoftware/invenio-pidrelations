@@ -48,13 +48,13 @@ extras_require = {
     ],
     'tests': tests_require,
     'mysql': [
-        'invenio-db[mysql,versioning]>=1.0.0b3',
+        'invenio-db[mysql,versioning]>=1.0.0',
     ],
     'postgresql': [
-        'invenio-db[postgresql,versioning]>=1.0.0b3',
+        'invenio-db[postgresql,versioning]>=1.0.0',
     ],
     'sqlite': [
-        'invenio-db[versioning]>=1.0.0b3',
+        'invenio-db[versioning]>=1.0.0',
     ],
     'records': [
         'invenio-deposit>=1.0.0a7',
@@ -63,10 +63,10 @@ extras_require = {
         # recursively lowest dependencies.
         'invenio-records-ui>=1.0.0a8',
         'invenio-records-rest>=1.0.0a17',
-        'invenio-accounts>=1.0.0b5',
+        'invenio-accounts>=1.0.0b7',
         'Flask-WTF>=0.13.1',
         # Needed in order to have correct alembic upgrade.
-        'invenio-oauth2server>=1.0.0a14',
+        'invenio-oauth2server>=1.0.0b4',
         'invenio-records-files>=1.0.0a9',
         'invenio-files-rest>=1.0.0a15',
     ],
@@ -87,14 +87,18 @@ setup_requires = [
 ]
 
 install_requires = [
-    'Flask-BabelEx>=0.9.2',
-#    'Flask-OAuthlib>=0.9.3,<0.9.4',
-    'invenio-pidstore>=1.0.0b1',
-    'invenio-rest[cors]>=1.0.0a10',
+    'Flask-BabelEx>=0.9.3',
+    'flask-oauthlib>=0.9.4',
+    'invenio-pidstore>=1.0.0',
+    'invenio-rest[cors]>=1.0.0',
     'SQLAlchemy>=1.0.9',
     'marshmallow>=2.15.2',
-    'requests-oauthlib>=0.5.0,<1.2.0',
-    'six>=1.10',
+    'requests-oauthlib>=1.1.0,<1.2.0',
+    'oauthlib<3.0.0,>=2.1.0',
+    'six>=1.11',
+    'urllib3<1.25,>=1.21.1',
+    'idna<2.8,>=2.5',
+    'SQLAlchemy-Continuum>=1.3,<1.3.5',
 ]
 
 packages = find_packages()
