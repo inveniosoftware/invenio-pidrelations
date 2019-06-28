@@ -9,6 +9,13 @@
 Changes
 =======
 
+Version 1.0.0a5 (released 06-28-2019)
+-------------------------------------
+
+- Dependencies update
+- API refactoring by making it more node-centric
+- License change to MIT
+
 Version 1.0.0a4 (released 02-11-2017)
 -------------------------------------
 
