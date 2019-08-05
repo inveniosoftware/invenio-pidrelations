@@ -16,7 +16,6 @@ language: python
 matrix:
   fast_finish: true
   allow_failures:
-    - env: REQUIREMENTS=devel EXTRAS=mysql SQLALCHEMY_DATABASE_URI="mysql+pymysql://travis@localhost:3306/invenio"
     - env: REQUIREMENTS=devel EXTRAS=postgresql SQLALCHEMY_DATABASE_URI="postgresql+psycopg2://postgres@localhost:5432/invenio"
     - env: REQUIREMENTS=devel EXTRAS=sqlite SQLALCHEMY_DATABASE_URI="sqlite:///test.db"
 
@@ -43,11 +42,8 @@ addons:
 env:
   - REQUIREMENTS=lowest EXTRAS=mysql SQLALCHEMY_DATABASE_URI="mysql+pymysql://travis@localhost:3306/invenio"
   - REQUIREMENTS=lowest EXTRAS=postgresql SQLALCHEMY_DATABASE_URI="postgresql+psycopg2://postgres@localhost:5432/invenio"
-  - REQUIREMENTS=lowest EXTRAS=sqlite SQLALCHEMY_DATABASE_URI="sqlite:///test.db"
   - REQUIREMENTS=release EXTRAS=mysql SQLALCHEMY_DATABASE_URI="mysql+pymysql://travis@localhost:3306/invenio"
   - REQUIREMENTS=release EXTRAS=postgresql SQLALCHEMY_DATABASE_URI="postgresql+psycopg2://postgres@localhost:5432/invenio" DEPLOY=true
-  - REQUIREMENTS=release EXTRAS=sqlite SQLALCHEMY_DATABASE_URI="sqlite:///test.db"
-  - REQUIREMENTS=devel EXTRAS=mysql SQLALCHEMY_DATABASE_URI="mysql+pymysql://travis@localhost:3306/invenio"
   - REQUIREMENTS=devel EXTRAS=postgresql SQLALCHEMY_DATABASE_URI="postgresql+psycopg2://postgres@localhost:5432/invenio"
   - REQUIREMENTS=devel EXTRAS=sqlite SQLALCHEMY_DATABASE_URI="sqlite:///test.db"
 
