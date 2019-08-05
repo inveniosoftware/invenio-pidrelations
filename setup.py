@@ -81,7 +81,6 @@ install_requires = [
     'six>=1.11',
     'urllib3<1.25,>=1.21.1',
     'idna<2.8,>=2.5',
-    'SQLAlchemy-Continuum>=1.3,<1.3.5',
 ]
 
 packages = find_packages()
