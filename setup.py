@@ -74,7 +74,6 @@ install_requires = [
     'flask-oauthlib>=0.9.4',
     'invenio-pidstore>=1.0.0',
     'invenio-rest[cors]>=1.0.0',
-    'SQLAlchemy>=1.0.9',
     'marshmallow>=2.15.2',
     'requests-oauthlib>=1.1.0,<1.2.0',
     'oauthlib<3.0.0,>=2.1.0',
