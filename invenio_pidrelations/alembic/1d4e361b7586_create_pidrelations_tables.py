@@ -38,7 +38,8 @@ def upgrade():
             name=op.f('fk_pidrelations_pidrelation_parent_id_pidstore_pid'),
             onupdate='CASCADE', ondelete='CASCADE'),
         sa.PrimaryKeyConstraint(
-            'parent_id', 'child_id', name=op.f('pk_pidrelations_pidrelation')
+            'parent_id', 'child_id', 'relation_type',
+            name=op.f('pk_pidrelations_pidrelation')
         )
     )
 
