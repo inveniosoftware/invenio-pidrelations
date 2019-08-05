@@ -9,6 +9,13 @@
 Changes
 =======
 
+Version 1.0.0a6 (released 08-05-2019)
+-------------------------------------
+
+- Model update by adding `relation_type` as primary key
+- Dependencies update
+- Reduce travis builds
+
 Version 1.0.0a5 (released 06-28-2019)
 -------------------------------------
 
