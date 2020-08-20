@@ -67,10 +67,10 @@ setup_requires = [
 ]
 
 install_requires = [
-    'Flask-BabelEx>=0.9.3',
+    'Flask-BabelEx>=0.9.4',
     'invenio-pidstore>=1.0.0',
     'marshmallow>=3.3.0,<4.0.0',
-    'six>=1.11',
+    'six>=1.12',
 ]
 
 packages = find_packages()
