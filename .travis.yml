@@ -2,6 +2,7 @@
 #
 # This file is part of Invenio.
 # Copyright (C) 2017-2019 CERN.
+# Copyright (C) 2020 Northwestern University.
 #
 # Invenio is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -48,8 +49,7 @@ env:
   - REQUIREMENTS=devel EXTRAS=sqlite SQLALCHEMY_DATABASE_URI="sqlite:///test.db"
 
 python:
-  - "2.7"
-  - "3.5"
+  - "3.6"
 
 before_install:
   - "travis_retry pip install --upgrade pip setuptools py"
@@ -78,6 +78,6 @@ deploy:
   distributions: "sdist bdist_wheel"
   on:
     tags: true
-    python: "2.7"
+    python: "3.6"
     repo: inveniosoftware/invenio-pidrelations
     condition: $DEPLOY = true

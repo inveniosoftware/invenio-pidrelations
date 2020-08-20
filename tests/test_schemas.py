@@ -2,6 +2,7 @@
 #
 # This file is part of Invenio.
 # Copyright (C) 2017-2019 CERN.
+# Copyright (C) 2020 Northwestern University.
 #
 # Invenio is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -19,7 +20,7 @@ class SampleRecordSchema(Schema, PIDRelationsMixin):
 
 def test_schema(app, nested_pids_and_relations):
     """Test the marshmallow schema serialization."""
-    schema = SampleRecordSchema(strict=True)
+    schema = SampleRecordSchema()
 
     pids, exp_relations = nested_pids_and_relations
     for p_idx in exp_relations.keys():
@@ -27,21 +28,19 @@ def test_schema(app, nested_pids_and_relations):
         expected = exp_relations[p_idx]
         input_data = {'pid': pid}
         schema.context['pid'] = pid
-        data, errors = schema.dump(input_data)
-        assert not errors
+        data = schema.dump(input_data)
         assert expected == data  # Test against hand-crafted fixture
-    pass
 
 
 def test_custom_schema(app, nested_pids_and_relations, custom_relation_schema):
     """Test the marshmallow schema serialization with custom schema."""
-    schema = SampleRecordSchema(strict=True)
+    schema = SampleRecordSchema()
     pids, exp_relations = nested_pids_and_relations
 
     pid = pids[4]
     input_data = {'pid': pid}
     schema.context['pid'] = pid
-    data, errors = schema.dump(input_data)
+    data = schema.dump(input_data)
     expected = {
         'relations': {
             'version': [
@@ -74,5 +73,4 @@ def test_custom_schema(app, nested_pids_and_relations, custom_relation_schema):
             # ],
         }
     }
-    assert not errors
     assert expected == data

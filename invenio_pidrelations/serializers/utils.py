@@ -34,5 +34,5 @@ def dump_relation(api, rel_cfg, pid, data):
     if schema_class is not None:
         schema = schema_class()
         schema.context['pid'] = pid
-        result, errors = schema.dump(api)
+        result = schema.dump(api)
         data.setdefault(rel_cfg.name, []).append(result)

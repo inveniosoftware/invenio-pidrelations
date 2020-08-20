@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Invenio.
-# Copyright (C) 2017-2019 CERN.
+# Copyright (C) 2017-2020 CERN.
+# Copyright (C) 2020 Northwestern University.
 #
 # Invenio is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
 
 """Indexer tests."""
 
+from unittest.mock import patch
 
 from invenio_pidstore.models import PIDStatus
 from invenio_pidstore.providers.recordid import RecordIdProvider
 from invenio_records.api import Record
-from mock import patch
 from test_helpers import compare_dictionaries
 
 from invenio_pidrelations.contrib.versioning import PIDNodeVersioning
