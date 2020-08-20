@@ -39,8 +39,7 @@ class RelationSchema(Schema):
 
     def _dump_relative(self, relative):
         if relative:
-            data, errors = PIDSchema().dump(relative)
-            return data
+            return PIDSchema().dump(relative)
         else:
             return None
 
@@ -100,6 +99,4 @@ class RelationSchema(Schema):
 
     def dump_children(self, obj):
         """Dump the siblings of a PID."""
-        data, errors = PIDSchema(many=True).dump(
-            obj.children.ordered('asc').all())
-        return data
+        return PIDSchema(many=True).dump(obj.children.ordered('asc').all())
