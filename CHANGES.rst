@@ -1,6 +1,7 @@
 ..
     This file is part of Invenio.
     Copyright (C) 2017-2019 CERN.
+    Copyright (C) 2020 Northwestern University.
 
     Invenio is free software; you can redistribute it and/or modify it
     under the terms of the MIT License; see LICENSE file for more details.
@@ -8,6 +9,13 @@
 
 Changes
 =======
+
+Version 1.0.0a7 (released 08-21-2020)
+-------------------------------------
+
+- Dependencies update
+- Python 3 update
+- Execution of RFC 21: removal of examples app
 
 Version 1.0.0a6 (released 08-05-2019)
 -------------------------------------
