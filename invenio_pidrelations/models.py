@@ -8,8 +8,6 @@
 
 """Persistent identifier's relations models."""
 
-from __future__ import absolute_import, print_function
-
 import logging
 
 from flask_babelex import gettext
