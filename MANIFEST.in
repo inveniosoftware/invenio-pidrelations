@@ -35,6 +35,7 @@ recursive-include docs *.py
 recursive-include docs *.rst
 recursive-include docs *.txt
 recursive-include docs Makefile
+recursive-include .github/workflows *.yml
 recursive-include invenio_pidrelations *.html
 recursive-include invenio_pidrelations *.py
 recursive-include tests *.py

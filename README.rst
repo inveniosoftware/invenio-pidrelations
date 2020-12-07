@@ -10,8 +10,8 @@
  Invenio-PIDRelations
 ======================
 
-.. image:: https://img.shields.io/travis/inveniosoftware/invenio-pidrelations.svg
-        :target: https://travis-ci.org/inveniosoftware/invenio-pidrelations
+.. image:: https://img.shields.io/github.com/inveniosoftware/invenio-pidrelations/workflows/CI/badge.svg
+        :target: https://github.com/inveniosoftware/invenio-pidrelations/actions
 
 .. image:: https://img.shields.io/coveralls/inveniosoftware/invenio-pidrelations.svg
         :target: https://coveralls.io/r/inveniosoftware/invenio-pidrelations
