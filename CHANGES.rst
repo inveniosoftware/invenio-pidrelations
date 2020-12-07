@@ -10,6 +10,11 @@
 Changes
 =======
 
+Version 0.1.0 (released 12-07-2020)
+-----------------------------------
+
+- Migrate CI to GitHub actions
+
 Version 1.0.0a7 (released 08-21-2020)
 -------------------------------------
 
