@@ -68,7 +68,7 @@ setup_requires = [
 
 install_requires = [
     'invenio-base>=1.2.3',
-    'invenio-i18n>=1.2.0',
+    'invenio-i18n>=2.0.0',
     'invenio-pidstore>=1.0.0',
     'marshmallow>=3.3.0,<4.0.0',
 ]

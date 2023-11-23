@@ -18,7 +18,7 @@ import tempfile
 import pytest
 from elasticsearch.exceptions import RequestError
 from flask import Flask
-from flask_babelex import Babel
+from invenio_i18n import Babel
 from invenio_db import InvenioDB
 from invenio_db import db as db_
 from invenio_indexer import InvenioIndexer
