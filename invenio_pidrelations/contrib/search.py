@@ -10,7 +10,7 @@
 
 from __future__ import absolute_import, print_function
 
-from elasticsearch_dsl.query import Bool, Q
+from invenio_search.engine import dsl
 
 
 class LatestVersionFilter(object):
@@ -18,9 +18,9 @@ class LatestVersionFilter(object):
 
     def __init__(self, query=None, query_parser=None):
         """Build filter property with query parser."""
-        self._query = Q('term', **{'relation.version.is_latest': True})
+        self._query = dsl.Q('term', **{'relation.version.is_latest': True})
         if query is not None:
-            self._query = Bool(
+            self._query = dsl.query.Bool(
                 must=[
                     query,
                     self._query

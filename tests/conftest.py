@@ -16,7 +16,7 @@ import sys
 import tempfile
 
 import pytest
-from elasticsearch.exceptions import RequestError
+from invenio_search.engine import search
 from flask import Flask
 from invenio_i18n import Babel
 from invenio_db import InvenioDB
@@ -82,7 +82,7 @@ def es(app):
     """Provide elasticsearch access."""
     try:
         list(current_search.create())
-    except RequestError:
+    except search.RequestError:
         list(current_search.delete(ignore=[400, 404]))
         list(current_search.create())
     current_search_client.indices.refresh()
