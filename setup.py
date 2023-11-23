@@ -22,13 +22,16 @@ tests_require = [
 ]
 
 invenio_db_version = '>=1.0.4,<2.0.0'
-invenio_search_version = '>=1.3.1,<1.4.0'
+invenio_search_version = '>=2.0.0,<3.0.0'
 extras_require = {
     'docs': [
         'Sphinx>=5',
     ],
     'elasticsearch7': [
         'invenio-search[elasticsearch7]{}'.format(invenio_search_version)
+    ],
+    'opensearch2': [
+        'invenio-search[opensearch2]{}'.format(invenio_search_version)
     ],
     'tests': tests_require,
     'mysql': [
