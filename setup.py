@@ -18,17 +18,14 @@ history = open('CHANGES.rst').read()
 
 tests_require = [
     'pytest-invenio>=1.4.0,<2.0.0',
+    'Sphinx>=5',
 ]
 
 invenio_db_version = '>=1.0.4,<2.0.0'
 invenio_search_version = '>=1.3.1,<1.4.0'
 extras_require = {
     'docs': [
-        'Sphinx>=3',
-    ],
-    # Invenio-Search
-    'elasticsearch6': [
-        'invenio-search[elasticsearch6]{}'.format(invenio_search_version)
+        'Sphinx>=5',
     ],
     'elasticsearch7': [
         'invenio-search[elasticsearch7]{}'.format(invenio_search_version)

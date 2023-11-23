@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Invenio.
-# Copyright (C) 2020 CERN.
+# Copyright (C) 2022 CERN.
 #
-# Invenio is free software; you can redistribute it and/or modify it
-# under the terms of the MIT License; see LICENSE file for more details
+# Invenio is free software; you can redistribute it and/or modify
+# it under the terms of the MIT License; see LICENSE file for more details.
 
 name: CI
 
@@ -28,64 +28,22 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-          python-version: [3.6, 3.7, 3.8]
-          # You can add more combinations e.g. dev requirements or MySQL by adding
-          # a new item to this list. Add its corresponding definition below.
-          # EXTRAS and REQUIREMENTS_LEVEL are always needed.
-          services: [release, lowest, devel]
+          python-version: [3.7, 3.8, 3.9]
+          requirements-level: [pypi]
+          db-service: [postgresql13, postgresql14]
+          search-service: [opensearch2,elasticsearch7]
           include:
-          # RELEASE
-          - services: release-mysql
-            DB: "mysql"
-            SQLALCHEMY_DATABASE_URI: "mysql+pymysql://invenio@invenio:3306/invenio"
-            MYSQL_VERSION: MYSQL_8_LATEST
-            ES_VERSION: "ES_7_LATEST"
-            EXTRAS: "records,indexer,elasticsearch7,mysql"
-            REQUIREMENTS_LEVEL: "pypi"
-          - services: release-postgresql
-            DB: "postgresql"
-            SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://invenio:invenio@localhost:5432/invenio"
-            POSTGRESQL_VERSION: POSTGRESQL_12_LATEST
-            ES_VERSION: "ES_7_LATEST"
-            EXTRAS: "records,indexer,elasticsearch7,postgresql"
-            REQUIREMENTS_LEVEL: "pypi"
-          # LOWEST
-          - services: lowest-mysql
-            DB: "mysql"
-            SQLALCHEMY_DATABASE_URI: "mysql+pymysql://invenio@invenio:3306/invenio"
-            MYSQL_VERSION: MYSQL_5_LATEST
-            ES_VERSION: "ES_7_LATEST"
-            EXTRAS: "records,indexer,elasticsearch7,mysql"
-            REQUIREMENTS_LEVEL: "min"
-          - services: lowest-postgresql
-            DB: "postgresql"
-            SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://invenio:invenio@localhost:5432/invenio"
-            POSTGRESQL_VERSION: POSTGRESQL_9_LATEST
-            ES_VERSION: "ES_7_LATEST"
-            EXTRAS: "records,indexer,elasticsearch7,postgresql"
-            REQUIREMENTS_LEVEL: "min"
-          # DEVEL
-          - services: devel-mysql
-            DB: "mysql"
-            SQLALCHEMY_DATABASE_URI: "mysql+pymysql://invenio@invenio:3306/invenio"
-            MYSQL_VERSION: MYSQL_5_LATEST
-            ES_VERSION: "ES_7_LATEST"
-            EXTRAS: "records,indexer,elasticsearch7,mysql"
-            REQUIREMENTS_LEVEL: "dev"
-          - services: devel-postgresql
-            DB: "postgresql"
-            SQLALCHEMY_DATABASE_URI: "postgresql+psycopg2://invenio:invenio@localhost:5432/invenio"
-            POSTGRESQL_VERSION: POSTGRESQL_9_LATEST
-            ES_VERSION: "ES_7_LATEST"
-            EXTRAS: "records,indexer,elasticsearch7,postgresql"
-            REQUIREMENTS_LEVEL: "dev"
+
+            - search-service: opensearch2
+              SEARCH_EXTRAS: "opensearch2"
+
+            - search-service: elasticsearch7
+              SEARCH_EXTRAS: "elasticsearch7"
 
     env:
-      SQLALCHEMY_DATABASE_URI: ${{matrix.SQLALCHEMY_DATABASE_URI}}
-      POSTGRESQL_VERSION: ${{matrix.POSTGRESQL_VERSION}}
-      MYSQL_VERSION: ${{matrix.MYSQL_VERSION}}
-      DB: ${{matrix.DB}}
-      ES_VERSION: ${{matrix.ES_VERSION}}
+      DB: ${{ matrix.db-service }}
+      SEARCH: ${{ matrix.search-service }}
+      EXTRAS: tests,${{matrix.SEARCH_EXTRAS}}
 
     steps:
       - name: Checkout
@@ -97,33 +55,24 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Generate dependencies
-        if: ${{ matrix.REQUIREMENTS_LEVEL != 'dev' }}
         run: |
           python -m pip install --upgrade pip setuptools py wheel requirements-builder
-          requirements-builder -e ${{ matrix.EXTRAS }} --level=${{ matrix.REQUIREMENTS_LEVEL }} setup.py > .${{ matrix.REQUIREMENTS_LEVEL }}-${{ matrix.python-version }}-requirements.txt
-
-      - name: Generate dependencies devel
-        if: ${{ matrix.REQUIREMENTS_LEVEL == 'dev' }}
-        run: |
-          python -m pip install --upgrade pip setuptools py wheel requirements-builder
-          requirements-builder -e ${{ matrix.EXTRAS }} --level=${{ matrix.REQUIREMENTS_LEVEL }} --req requirements-devel.txt setup.py > .${{ matrix.REQUIREMENTS_LEVEL }}-${{ matrix.python-version }}-requirements.txt
+          requirements-builder -e "$EXTRAS" --level=${{ matrix.requirements-level }} setup.py > .${{ matrix.requirements-level }}-${{ matrix.python-version }}-requirements.txt
 
       - name: Cache pip
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('.${{ matrix.REQUIREMENTS_LEVEL }}-${{ matrix.python-version }}-requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('.${{ matrix.requirements-level }}-${{ matrix.python-version }}-requirements.txt') }}
 
       - name: Install dependencies
         run: |
-          pip install -r .${{matrix.REQUIREMENTS_LEVEL}}-${{ matrix.python-version }}-requirements.txt
-          pip install -e .[all]
+          pip install -r .${{matrix.requirements-level}}-${{ matrix.python-version }}-requirements.txt
+          pip install ".[$EXTRAS]"
           pip freeze
           docker --version
           docker-compose --version
 
-      - name: Run tests
-        # You must change the ignore command for the manifest check.
-        # Remove `.travis-*` and add `.*-requirements.txt`
+      - name: Run backend tests
         run: |
           ./run-tests.sh
