@@ -71,6 +71,7 @@ install_requires = [
     'invenio-i18n>=2.0.0',
     'invenio-pidstore>=1.0.0',
     'marshmallow>=3.3.0,<4.0.0',
+    'speaklater>=1.3,<2.0',
 ]
 
 packages = find_packages()

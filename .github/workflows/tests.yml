@@ -43,7 +43,7 @@ jobs:
     env:
       DB: ${{ matrix.db-service }}
       SEARCH: ${{ matrix.search-service }}
-      EXTRAS: tests,${{matrix.SEARCH_EXTRAS}}
+      EXTRAS: tests,${{matrix.SEARCH_EXTRAS}},postgresql,indexer,records
 
     steps:
       - name: Checkout
