@@ -10,8 +10,8 @@
 
 import logging
 
-from invenio_i18n import gettext
 from invenio_db import db
+from invenio_i18n import gettext
 from invenio_pidstore.models import PersistentIdentifier
 from speaklater import make_lazy_gettext
 from sqlalchemy.exc import IntegrityError

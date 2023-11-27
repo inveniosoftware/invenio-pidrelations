@@ -16,20 +16,22 @@ import sys
 import tempfile
 
 import pytest
-from invenio_search.engine import search
 from flask import Flask
-from invenio_i18n import Babel
 from invenio_db import InvenioDB
 from invenio_db import db as db_
+from invenio_db.utils import drop_alembic_version_table
+from invenio_i18n import Babel
 from invenio_indexer import InvenioIndexer
 from invenio_indexer.api import RecordIndexer
 from invenio_pidstore import InvenioPIDStore
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 from invenio_records import InvenioRecords, Record
 from invenio_search import InvenioSearch, current_search, current_search_client
+from invenio_search.engine import search
 from marshmallow import fields
-from sqlalchemy_utils.functions import create_database, database_exists, \
-    drop_database
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.schema import DropConstraint, DropSequence, DropTable
+from sqlalchemy_utils.functions import create_database, database_exists, drop_database
 
 from invenio_pidrelations import InvenioPIDRelations
 from invenio_pidrelations.config import RelationType
@@ -55,8 +57,6 @@ def base_app(instance_path):
     app_ = Flask('testapp', instance_path=instance_path)
     app_.config.update(
         SECRET_KEY='SECRET_KEY',
-        SQLALCHEMY_DATABASE_URI=os.environ.get(
-            'SQLALCHEMY_DATABASE_URI', 'sqlite:///test.db'),
         SQLALCHEMY_TRACK_MODIFICATIONS=True,
         TESTING=True,
     )
@@ -92,18 +92,14 @@ def es(app):
 
 @pytest.yield_fixture()
 def db(app):
-    """Database fixture."""
-    if database_exists(str(db_.engine.url)):
-        db_.session.remove()
-        drop_database(str(db_.engine.url))
-    create_database(str(db_.engine.url))
+    """Get setup database."""
+    if not database_exists(str(db_.engine.url)):
+        create_database(str(db_.engine.url))
     db_.create_all()
     yield db_
     db_.session.remove()
-    drop_database(db_.engine.url)
-    # Dispose the engine in order to close all connections. This is
-    # needed for sqlite in memory databases.
-    db_.engine.dispose()
+    db_.drop_all()
+    drop_alembic_version_table()
 
 
 @pytest.fixture()
