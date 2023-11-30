@@ -151,7 +151,7 @@ class PIDNodeVersioning(PIDNodeOrdered):
 
 
 versioning_blueprint = Blueprint(
-    'invenio_pidrelations.versioning',
+    'invenio_pidrelations_versioning',
     __name__,
     template_folder='templates'
 )

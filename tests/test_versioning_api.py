@@ -43,7 +43,7 @@ def test_versioning_insert_child(db, version_pids, build_pid):
     version_pids[0]['children'].insert(h1.index(h1.draft_child), new_pids[1])
     h1.insert_child(new_pids[1], -1)
     # Check that the parent redirects to the added PID
-    assert(version_pids[0]['parent'].get_redirect() == new_pids[1])
+    assert (version_pids[0]['parent'].get_redirect() == new_pids[1])
     # Register the draft so that it appears in the children
     h1.draft_child.register()
     h1.update_redirect()

@@ -17,21 +17,25 @@ readme = open('README.rst').read()
 history = open('CHANGES.rst').read()
 
 tests_require = [
-    'pytest-invenio>=1.4.0,<2.0.0',
+    'pytest-invenio>=2.1.0,<3.0.0',
+    'pytest-black>=0.3.0',
+    'invenio-app>=1.3.4,<2.0.0',
+    'pytest-mock>=1.6.0',
+    'Sphinx>=5',
+
 ]
 
-invenio_db_version = '>=1.0.4,<2.0.0'
-invenio_search_version = '>=1.3.1,<1.4.0'
+invenio_db_version = '>=1.0.14,<2.0.0'
+invenio_search_version = '>=2.0.0,<3.0.0'
 extras_require = {
     'docs': [
-        'Sphinx>=3',
-    ],
-    # Invenio-Search
-    'elasticsearch6': [
-        'invenio-search[elasticsearch6]{}'.format(invenio_search_version)
+        'Sphinx>=5',
     ],
     'elasticsearch7': [
         'invenio-search[elasticsearch7]{}'.format(invenio_search_version)
+    ],
+    'opensearch2': [
+        'invenio-search[opensearch2]{}'.format(invenio_search_version)
     ],
     'tests': tests_require,
     'mysql': [
@@ -68,9 +72,10 @@ setup_requires = [
 
 install_requires = [
     'invenio-base>=1.2.3',
-    'invenio-i18n>=1.2.0',
+    'invenio-i18n>=2.0.0',
     'invenio-pidstore>=1.0.0',
     'marshmallow>=3.3.0,<4.0.0',
+    'speaklater>=1.3,<2.0',
 ]
 
 packages = find_packages()
