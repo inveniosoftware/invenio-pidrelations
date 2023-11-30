@@ -10,6 +10,19 @@
 Changes
 =======
 
+Version 0.2.0 (released 30-11-2023)
+-----------------------------------
+
+- global: remove deprecated elasticsearch imports
+- remove deprecated flask-babelex import
+- CI: update test config
+- installation: upgrade invenio-search
+- tests: update run-tests script
+- installation: update extras' keys
+- installation: upgrade pytest invenio
+- blueprints: fix naming (deprecation of dots usage)
+- tests: update fixtures settings
+
 Version 0.1.0 (released 12-07-2020)
 -----------------------------------
 
