@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Invenio.
-# Copyright (C) 2015-2019 CERN.
+# Copyright (C) 2015-2025 CERN.
 #
 # Invenio is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -10,10 +10,9 @@
 
 from __future__ import absolute_import, print_function
 
-from flask_sqlalchemy import BaseQuery
 from invenio_db import db
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
-from sqlalchemy import and_
+from sqlalchemy import and_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import aliased
 from werkzeug.utils import cached_property
@@ -22,32 +21,101 @@ from .errors import PIDRelationConsistencyError
 from .models import PIDRelation
 
 
-class PIDQuery(BaseQuery):
-    """Query used by PIDNodes APIs when requesting related PIDs."""
+class PIDQuery:
+    """Legacy-style query wrapper for PIDNodes APIs when requesting related PIDs..
 
-    def __init__(self, entities, session,
-                 _filtered_pid_class=PersistentIdentifier):
+    This class provides a compatibility layer for PID-related queries that were
+    originally built using the SQLAlchemy ORM's `query()` API.
+
+    With the migration to SQLAlchemy >=2.0 and its statement-centric approach,
+    this class allows older code to function without refactoring, by wrapping
+    modern `select()`-based statements in an interface similar to the legacy ORM style.
+    """
+
+    def __init__(self, statement, session, _filtered_pid_class=PersistentIdentifier):
         """Constructor.
 
+        :param statement: An initial SQLAlchemy select() statement.
+        :param session: The SQLAlchemy session.
         :param _filtered_pid_class: SQLAlchemy Model class which is used for
         status filtering.
         """
-        super(PIDQuery, self).__init__(entities, session)
+        self._statement = statement
+        self._session = session
         self._filtered_pid_class = _filtered_pid_class
 
-    def ordered(self, ord='desc'):
+    def ordered(self, ord="desc"):
         """Order the query result on the relations' indexes."""
-        if ord not in ('asc', 'desc', ):
-            raise
+        if ord not in (
+            "asc",
+            "desc",
+        ):
+            raise ValueError("Order must be 'asc' or 'desc'")
         ord_f = getattr(PIDRelation.index, ord)()
-        return self.order_by(ord_f)
+        return PIDQuery(
+            self._statement.order_by(ord_f), self._session, self._filtered_pid_class
+        )
 
     def status(self, status_in):
         """Filter the PIDs based on their status."""
         if isinstance(status_in, PIDStatus):
-            status_in = [status_in, ]
-        return self.filter(
-            self._filtered_pid_class.status.in_(status_in)
+            status_in = [
+                status_in,
+            ]
+        return PIDQuery(
+            self._statement.where(self._filtered_pid_class.status.in_(status_in)),
+            self._session,
+            self._filtered_pid_class,
+        )
+
+    def filter(self, *args):
+        """Apply a filter to the statement."""
+        return PIDQuery(
+            self._statement.filter(*args), self._session, self._filtered_pid_class
+        )
+
+    def filter_by(self, **kwargs):
+        """Apply a filter by to the statement."""
+        return PIDQuery(
+            self._statement.filter_by(**kwargs),
+            self._session,
+            self._filtered_pid_class,
+        )
+
+    def join(self, *args, **kwargs):
+        """Apply a join to the statement."""
+        return PIDQuery(
+            self._statement.join(*args, **kwargs),
+            self._session,
+            self._filtered_pid_class,
+        )
+
+    def count(self):
+        """Count the results of the query."""
+        return self._session.scalar(
+            select(db.func.count()).select_from(self._statement.subquery())
+        )
+
+    def first(self):
+        """Get the first result."""
+        return self._session.scalars(self._statement.limit(1)).first()
+
+    def one(self):
+        """Get exactly one result."""
+        return self._session.scalars(self._statement).one()
+
+    def one_or_none(self):
+        """Get one result or None if no results."""
+        return self._session.scalars(self._statement).one_or_none()
+
+    def all(self):
+        """Get all results."""
+        return self._session.scalars(self._statement).all()
+
+    def exists(self):
+        """Check if any results exist."""
+        return self._session.scalar(
+            select(1).select_from(self._statement.subquery()).exists().select()
         )
 
 
@@ -95,10 +163,12 @@ class PIDNode(object):
 
     def _get_child_relation(self, child_pid):
         """Retrieve the relation between this node and a child PID."""
-        return PIDRelation.query.filter_by(
+        stmt = select(PIDRelation).filter_by(
             parent=self._resolved_pid,
             child=child_pid,
-            relation_type=self.relation_type.id).one()
+            relation_type=self.relation_type.id,
+        )
+        return db.session.execute(stmt).scalar_one()
 
     def _check_child_limits(self, child_pid):
         """Check that inserting a child is within the limits."""
@@ -107,52 +177,56 @@ class PIDNode(object):
             raise PIDRelationConsistencyError(
                 "Max number of children is set to {}.".
                 format(self.max_children))
-        if self.max_parents is not None and \
-                PIDRelation.query.filter_by(
-                    child=child_pid,
-                    relation_type=self.relation_type.id)\
-                .count() >= self.max_parents:
-            raise PIDRelationConsistencyError(
-                "This pid already has the maximum number of parents.")
+        if self.max_parents is not None:
+            stmt = (
+                select(db.func.count())
+                .select_from(PIDRelation)
+                .filter_by(child=child_pid, relation_type=self.relation_type.id)
+            )
+            if db.session.execute(stmt).scalar() >= self.max_parents:
+                raise PIDRelationConsistencyError(
+                    "This pid already has the maximum number of parents."
+                )
 
     def _connected_pids(self, from_parent=True):
-        """Follow a relationship to find connected PIDs.abs.
+        """Follow a relationship to find connected PIDs.
 
         :param from_parent: search children from the current pid if True, else
         search for its parents.
         :type from_parent: bool
         """
-        to_pid = aliased(PersistentIdentifier, name='to_pid')
+        to_pid = aliased(PersistentIdentifier, name="to_pid")
         if from_parent:
-            to_relation = PIDRelation.child_id
-            from_relation = PIDRelation.parent_id
+            to_relation_id = PIDRelation.child_id
+            from_relation_id = PIDRelation.parent_id
         else:
-            to_relation = PIDRelation.parent_id
-            from_relation = PIDRelation.child_id
-        query = PIDQuery(
-            [to_pid], db.session(), _filtered_pid_class=to_pid
-        ).join(
+            to_relation_id = PIDRelation.parent_id
+            from_relation_id = PIDRelation.child_id
+
+        initial_stmt = select(to_pid).join(
             PIDRelation,
             and_(
-                to_pid.id == to_relation,
-                PIDRelation.relation_type == self.relation_type.id
-            )
+                to_pid.id == to_relation_id,
+                PIDRelation.relation_type == self.relation_type.id,
+            ),
         )
-        # accept both PersistentIdentifier models and fake PIDs with just
+
+        query_builder = PIDQuery(initial_stmt, db.session(), _filtered_pid_class=to_pid)
+
+        # Accept both PersistentIdentifier models and fake PIDs with just
         # pid_value, pid_type as they are fetched with the PID fetcher.
         if isinstance(self.pid, PersistentIdentifier):
-            query = query.filter(from_relation == self.pid.id)
+            query_builder = query_builder.filter(from_relation_id == self.pid.id)
         else:
-            from_pid = aliased(PersistentIdentifier, name='from_pid')
-            query = query.join(
-                from_pid,
-                from_pid.id == from_relation
+            from_pid = aliased(PersistentIdentifier, name="from_pid")
+            query_builder = query_builder.join(
+                from_pid, from_pid.id == from_relation_id
             ).filter(
                 from_pid.pid_value == self.pid.pid_value,
                 from_pid.pid_type == self.pid.pid_type,
             )
 
-        return query
+        return query_builder
 
     @property
     def parents(self):
@@ -167,12 +241,12 @@ class PIDNode(object):
     @property
     def is_parent(self):
         """Test if the given PID has any children."""
-        return db.session.query(self.children.exists()).scalar()
+        return self.children.exists()
 
     @property
     def is_child(self):
         """Test if the given PID has any parents."""
-        return db.session.query(self.parents.exists()).scalar()
+        return self.parents.exists()
 
     def insert_child(self, child_pid):
         """Add the given PID to the list of children PIDs."""
@@ -193,10 +267,12 @@ class PIDNode(object):
         with db.session.begin_nested():
             if not isinstance(child_pid, PersistentIdentifier):
                 child_pid = resolve_pid(child_pid)
-            relation = PIDRelation.query.filter_by(
+            stmt = select(PIDRelation).filter_by(
                 parent=self._resolved_pid,
                 child=child_pid,
-                relation_type=self.relation_type.id).one()
+                relation_type=self.relation_type.id,
+            )
+            relation = db.session.execute(stmt).scalar_one()
             db.session.delete(relation)
 
 
@@ -211,10 +287,12 @@ class PIDNodeOrdered(PIDNode):
         """Index of the child in the relation."""
         if not isinstance(child_pid, PersistentIdentifier):
             child_pid = resolve_pid(child_pid)
-        relation = PIDRelation.query.filter_by(
+        stmt = select(PIDRelation).filter_by(
             parent=self._resolved_pid,
             child=child_pid,
-            relation_type=self.relation_type.id).one()
+            relation_type=self.relation_type.id,
+        )
+        relation = db.session.execute(stmt).scalar_one()
         return relation.index
 
     def is_last_child(self, child_pid):
@@ -280,11 +358,18 @@ class PIDNodeOrdered(PIDNode):
             with db.session.begin_nested():
                 if not isinstance(child_pid, PersistentIdentifier):
                     child_pid = resolve_pid(child_pid)
-                child_relations = self._resolved_pid.child_relations.filter(
-                    PIDRelation.relation_type == self.relation_type.id
-                ).order_by(PIDRelation.index).all()
+                stmt = (
+                    select(PIDRelation)
+                    .filter(
+                        PIDRelation.parent_id == self._resolved_pid.id,
+                        PIDRelation.relation_type == self.relation_type.id,
+                    )
+                    .order_by(PIDRelation.index)
+                )
+                child_relations = db.session.execute(stmt).scalars().all()
                 relation_obj = PIDRelation.create(
-                    self._resolved_pid, child_pid, self.relation_type.id, None)
+                    self._resolved_pid, child_pid, self.relation_type.id, None
+                )
                 if index == -1:
                     child_relations.append(relation_obj)
                 else:
@@ -297,9 +382,15 @@ class PIDNodeOrdered(PIDNode):
     def remove_child(self, child_pid, reorder=False):
         """Remove a child from a PID concept."""
         super(PIDNodeOrdered, self).remove_child(child_pid)
-        child_relations = self._resolved_pid.child_relations.filter(
-            PIDRelation.relation_type == self.relation_type.id).order_by(
-                PIDRelation.index).all()
+        stmt = (
+            select(PIDRelation)
+            .filter(
+                PIDRelation.parent_id == self._resolved_pid.id,
+                PIDRelation.relation_type == self.relation_type.id,
+            )
+            .order_by(PIDRelation.index)
+        )
+        child_relations = db.session.execute(stmt).scalars().all()
         if reorder:
             for idx, c in enumerate(child_relations):
                 c.index = idx
