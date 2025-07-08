@@ -19,14 +19,14 @@ history = open('CHANGES.rst').read()
 tests_require = [
     'pytest-invenio>=2.1.0,<3.0.0',
     'pytest-black>=0.3.0',
-    'invenio-app>=1.3.4,<2.0.0',
+    'invenio-app>=2.0.0,<3.0.0',
     'pytest-mock>=1.6.0',
     'Sphinx>=5',
 
 ]
 
-invenio_db_version = '>=1.0.14,<2.0.0'
-invenio_search_version = '>=2.0.0,<3.0.0'
+invenio_db_version = '>=2.0.0,<3.0.0'
+invenio_search_version = '>=3.1.0,<4.0.0'
 extras_require = {
     'docs': [
         'Sphinx>=5',
@@ -48,7 +48,7 @@ extras_require = {
         'invenio-db[versioning]{}'.format(invenio_db_version)
     ],
     'records': [
-        'invenio-records>=1.3.2',
+        'invenio-records>=2.2.1',
         # FIXME: Added because requirements-builder does not search
         # recursively lowest dependencies.
         'invenio-records-ui>=1.1.0',

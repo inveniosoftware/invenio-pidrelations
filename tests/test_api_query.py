@@ -10,6 +10,7 @@
 
 import pytest
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
+from sqlalchemy import select
 from sqlalchemy.orm import aliased
 
 from invenio_pidrelations.api import PIDQuery
@@ -24,7 +25,7 @@ from invenio_pidrelations.models import PIDRelation
 ])
 def test_query_order(db, version_pids, order, sort):
     """Test PIDQuery.order()."""
-    result = PIDQuery([PersistentIdentifier], db.session()).join(
+    result = PIDQuery(select(PersistentIdentifier), db.session).join(
         PIDRelation,
         PersistentIdentifier.id == PIDRelation.child_id
     ).filter(
@@ -52,7 +53,7 @@ def test_query_order(db, version_pids, order, sort):
 def test_query_status(db, version_pids, status, filt):
     """Test PIDQuery.status()."""
     # test with simple join
-    result = PIDQuery([PersistentIdentifier], db.session()).join(
+    result = PIDQuery(select(PersistentIdentifier), db.session).join(
         PIDRelation,
         PersistentIdentifier.id == PIDRelation.child_id
     ).filter(
@@ -64,7 +65,7 @@ def test_query_status(db, version_pids, status, filt):
     parent_pid = aliased(PersistentIdentifier, name='parent_pid')
     child_pid = aliased(PersistentIdentifier, name='child_pid')
     result2 = PIDQuery(
-        [child_pid], db.session(), _filtered_pid_class=child_pid
+        select(child_pid), db.session, _filtered_pid_class=child_pid
     ).join(
         PIDRelation,
         child_pid.id == PIDRelation.child_id
