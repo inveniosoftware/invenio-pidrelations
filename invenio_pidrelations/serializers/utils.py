@@ -20,8 +20,7 @@ def serialize_relations(pid):
     relations = PIDRelation.get_child_relations(pid).all()
     for relation in relations:
         rel_cfg = resolve_relation_type_config(relation.relation_type)
-        dump_relation(rel_cfg.api(relation.parent),
-                      rel_cfg, pid, data)
+        dump_relation(rel_cfg.api(relation.parent), rel_cfg, pid, data)
     parent_relations = PIDRelation.get_parent_relations(pid).all()
     rel_cfgs = set([resolve_relation_type_config(p) for p in parent_relations])
     for rel_cfg in rel_cfgs:
@@ -34,6 +33,6 @@ def dump_relation(api, rel_cfg, pid, data):
     schema_class = rel_cfg.schema
     if schema_class is not None:
         schema = schema_class()
-        schema.context['pid'] = pid
+        schema.context["pid"] = pid
         result = schema.dump(api)
         data.setdefault(rel_cfg.name, []).append(result)

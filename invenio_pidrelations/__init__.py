@@ -13,4 +13,4 @@ from __future__ import absolute_import, print_function
 from .ext import InvenioPIDRelations
 from .version import __version__
 
-__all__ = ('__version__', 'InvenioPIDRelations')
+__all__ = ("__version__", "InvenioPIDRelations")

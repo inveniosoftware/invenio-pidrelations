@@ -11,10 +11,10 @@
 import sqlalchemy as sa
 from alembic import op
 
-revision = '2216c32d7059'
+revision = "2216c32d7059"
 down_revision = None
-branch_labels = (u'invenio_pidrelations',)
-depends_on = '999c62899c20'  # invenio-pidstore create tables
+branch_labels = ("invenio_pidrelations",)
+depends_on = "999c62899c20"  # invenio-pidstore create tables
 
 
 def upgrade():

@@ -18,13 +18,10 @@ class LatestVersionFilter(object):
 
     def __init__(self, query=None, query_parser=None):
         """Build filter property with query parser."""
-        self._query = dsl.Q('term', **{'relation.version.is_latest': True})
+        self._query = dsl.Q("term", **{"relation.version.is_latest": True})
         if query is not None:
             self._query = dsl.query.Bool(
-                must=[
-                    query,
-                    self._query
-                ],
+                must=[query, self._query],
             )
         self.query_parser = query_parser or (lambda x: x)
 

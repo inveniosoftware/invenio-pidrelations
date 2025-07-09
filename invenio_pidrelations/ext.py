@@ -24,7 +24,7 @@ class _InvenioPIDRelationsState(object):
 
     @cached_property
     def relation_types(self):
-        return self.app.config.get('PIDRELATIONS_RELATION_TYPES', {})
+        return self.app.config.get("PIDRELATIONS_RELATION_TYPES", {})
 
 
 class InvenioPIDRelations(object):
@@ -38,10 +38,10 @@ class InvenioPIDRelations(object):
     def init_app(self, app):
         """Flask application initialization."""
         self.init_config(app)
-        app.extensions['invenio-pidrelations'] = _InvenioPIDRelationsState(app)
+        app.extensions["invenio-pidrelations"] = _InvenioPIDRelationsState(app)
 
     def init_config(self, app):
         """Initialize configuration."""
         for k in dir(config):
-            if k.startswith('PIDRELATIONS_'):
+            if k.startswith("PIDRELATIONS_"):
                 app.config.setdefault(k, getattr(config, k))

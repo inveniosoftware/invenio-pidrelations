@@ -15,6 +15,7 @@ from test_helpers import PIDRelationsMixin
 
 class SampleRecordSchema(Schema, PIDRelationsMixin):
     """Sample record schema."""
+
     pass
 
 
@@ -26,8 +27,8 @@ def test_schema(app, nested_pids_and_relations):
     for p_idx in exp_relations.keys():
         pid = pids[p_idx]
         expected = exp_relations[p_idx]
-        input_data = {'pid': pid}
-        schema.context['pid'] = pid
+        input_data = {"pid": pid}
+        schema.context["pid"] = pid
         data = schema.dump(input_data)
         assert expected == data  # Test against hand-crafted fixture
 
@@ -38,17 +39,19 @@ def test_custom_schema(app, nested_pids_and_relations, custom_relation_schema):
     pids, exp_relations = nested_pids_and_relations
 
     pid = pids[4]
-    input_data = {'pid': pid}
-    schema.context['pid'] = pid
+    input_data = {"pid": pid}
+    schema.context["pid"] = pid
     data = schema.dump(input_data)
     expected = {
-        'relations': {
-            'version': [
+        "relations": {
+            "version": [
                 {
-                    'children': [{'pid_type': 'recid', 'pid_value': '2'},
-                                 {'pid_type': 'recid', 'pid_value': '3'},
-                                 {'pid_type': 'recid', 'pid_value': '4'}],
-                    'has_three_children': True,
+                    "children": [
+                        {"pid_type": "recid", "pid_value": "2"},
+                        {"pid_type": "recid", "pid_value": "3"},
+                        {"pid_type": "recid", "pid_value": "4"},
+                    ],
+                    "has_three_children": True,
                 },
             ],
             # 'ordered': [

@@ -54,9 +54,9 @@ def instance_path():
 @pytest.fixture()
 def base_app(instance_path):
     """Flask application fixture."""
-    app_ = Flask('testapp', instance_path=instance_path)
+    app_ = Flask("testapp", instance_path=instance_path)
     app_.config.update(
-        SECRET_KEY='SECRET_KEY',
+        SECRET_KEY="SECRET_KEY",
         SQLALCHEMY_TRACK_MODIFICATIONS=True,
         TESTING=True,
     )
@@ -105,13 +105,13 @@ def db(app):
 @pytest.fixture()
 def version_relation(app, db):
     """Versioning relation."""
-    return resolve_relation_type_config('version')
+    return resolve_relation_type_config("version")
 
 
 @pytest.fixture()
 def draft_relation(app, db):
     """Versioning relation."""
-    return resolve_relation_type_config('record_draft')
+    return resolve_relation_type_config("record_draft")
 
 
 @pytest.fixture()
@@ -119,35 +119,44 @@ def recids(app, db):
     """Create recids fixture."""
     return {
         str(status): PersistentIdentifier.create(
-            'recid', 'pid_status_{}'.format(status), object_type='rec',
-            status=status
-        ) for status in [PIDStatus.REGISTERED, PIDStatus.DELETED,
-                         PIDStatus.RESERVED, PIDStatus.REDIRECTED]
+            "recid", "pid_status_{}".format(status), object_type="rec", status=status
+        )
+        for status in [
+            PIDStatus.REGISTERED,
+            PIDStatus.DELETED,
+            PIDStatus.RESERVED,
+            PIDStatus.REDIRECTED,
+        ]
     }
 
 
 @pytest.fixture()
 def version_pids(app, db, version_relation, draft_relation):
     """Create versionned PIDs."""
-    h1 = PersistentIdentifier.create('recid', 'foobar', object_type='rec',
-                                     status=PIDStatus.REGISTERED)
-    h1v1 = PersistentIdentifier.create('recid', 'foobar.v1', object_type='rec',
-                                       status=PIDStatus.REGISTERED)
-    h1v2 = PersistentIdentifier.create('recid', 'foobar.v2', object_type='rec',
-                                       status=PIDStatus.REGISTERED)
-    h1v3 = PersistentIdentifier.create('recid', 'foobar.v3', object_type='rec',
-                                       status=PIDStatus.REGISTERED)
-    h1del1 = PersistentIdentifier.create('recid', 'foobar.del1',
-                                         object_type='rec',
-                                         status=PIDStatus.DELETED)
-    h1del2 = PersistentIdentifier.create('recid', 'foobar.del2',
-                                         object_type='rec',
-                                         status=PIDStatus.DELETED)
-    h1draft1 = PersistentIdentifier.create('recid', 'foobar.draft',
-                                           object_type='rec',
-                                           status=PIDStatus.RESERVED)
-    h1deposit1 = PersistentIdentifier.create('recid', 'foobar.deposit',
-                                             object_type='rec')
+    h1 = PersistentIdentifier.create(
+        "recid", "foobar", object_type="rec", status=PIDStatus.REGISTERED
+    )
+    h1v1 = PersistentIdentifier.create(
+        "recid", "foobar.v1", object_type="rec", status=PIDStatus.REGISTERED
+    )
+    h1v2 = PersistentIdentifier.create(
+        "recid", "foobar.v2", object_type="rec", status=PIDStatus.REGISTERED
+    )
+    h1v3 = PersistentIdentifier.create(
+        "recid", "foobar.v3", object_type="rec", status=PIDStatus.REGISTERED
+    )
+    h1del1 = PersistentIdentifier.create(
+        "recid", "foobar.del1", object_type="rec", status=PIDStatus.DELETED
+    )
+    h1del2 = PersistentIdentifier.create(
+        "recid", "foobar.del2", object_type="rec", status=PIDStatus.DELETED
+    )
+    h1draft1 = PersistentIdentifier.create(
+        "recid", "foobar.draft", object_type="rec", status=PIDStatus.RESERVED
+    )
+    h1deposit1 = PersistentIdentifier.create(
+        "recid", "foobar.deposit", object_type="rec"
+    )
     VERSION = version_relation.id
     DRAFT = draft_relation.id
     PIDRelation.create(h1, h1v1, VERSION, 0)
@@ -160,15 +169,16 @@ def version_pids(app, db, version_relation, draft_relation):
 
     h1.redirect(h1v3)
 
-    h2 = PersistentIdentifier.create('recid', 'spam', object_type='rec',
-                                     status=PIDStatus.REGISTERED)
-    h2v1 = PersistentIdentifier.create('recid', 'spam.v1')
+    h2 = PersistentIdentifier.create(
+        "recid", "spam", object_type="rec", status=PIDStatus.REGISTERED
+    )
+    h2v1 = PersistentIdentifier.create("recid", "spam.v1")
     PIDRelation.create(h2, h2v1, VERSION, 0)
     h2.redirect(h2v1)
     return [
         {
-            'parent': h1,
-            'children': [
+            "parent": h1,
+            "children": [
                 h1v1,
                 h1v2,
                 h1v3,
@@ -176,11 +186,11 @@ def version_pids(app, db, version_relation, draft_relation):
                 h1del2,
                 h1draft1,
             ],
-            'deposit': h1deposit1,
+            "deposit": h1deposit1,
         },
         {
-            'parent': h2,
-            'children': [
+            "parent": h2,
+            "children": [
                 h2v1,
             ],
         },
@@ -194,11 +204,12 @@ def nested_pids_and_relations(app, db):
     pids = {}
     for idx in range(1, 12):
         pid_value = str(idx)
-        p = PersistentIdentifier.create('recid', pid_value, object_type='rec',
-                                        status=PIDStatus.REGISTERED)
+        p = PersistentIdentifier.create(
+            "recid", pid_value, object_type="rec", status=PIDStatus.REGISTERED
+        )
         pids[idx] = p
 
-    VERSION = resolve_relation_type_config('version').id
+    VERSION = resolve_relation_type_config("version").id
 
     #    1  (Version)
     #  / | \
@@ -210,24 +221,23 @@ def nested_pids_and_relations(app, db):
     # Define the expected PID relation tree for of the PIDs
     expected_relations = {}
     expected_relations[4] = {
-        u'relations': {
-            'version': [
-                {u'children': [{u'pid_type': u'recid',
-                                u'pid_value': u'2'},
-                               {u'pid_type': u'recid',
-                                u'pid_value': u'3'},
-                               {u'pid_type': u'recid',
-                                u'pid_value': u'4'}],
-                 u'index': 2,
-                 u'is_child': True,
-                 u'previous': {'pid_type': 'recid', 'pid_value': '3'},
-                 u'next': None,
-                 u'is_last': True,
-                 u'is_parent': False,
-                 u'parent': {u'pid_type': u'recid',
-                             u'pid_value': u'1'},
-                 u'type': 'version'
-                 }
+        "relations": {
+            "version": [
+                {
+                    "children": [
+                        {"pid_type": "recid", "pid_value": "2"},
+                        {"pid_type": "recid", "pid_value": "3"},
+                        {"pid_type": "recid", "pid_value": "4"},
+                    ],
+                    "index": 2,
+                    "is_child": True,
+                    "previous": {"pid_type": "recid", "pid_value": "3"},
+                    "next": None,
+                    "is_last": True,
+                    "is_parent": False,
+                    "parent": {"pid_type": "recid", "pid_value": "1"},
+                    "type": "version",
+                }
             ],
         }
     }
@@ -240,9 +250,12 @@ class CustomRelationSchema(RelationSchema):
     class Meta:
         """Meta fields of the schema."""
 
-        fields = ("children", "has_three_children", )
+        fields = (
+            "children",
+            "has_three_children",
+        )
 
-    has_three_children = fields.Method('dump_has_three_children')
+    has_three_children = fields.Method("dump_has_three_children")
 
     def dump_has_three_children(self, obj):
         """Dump information if relation has exactly three children."""
@@ -252,37 +265,42 @@ class CustomRelationSchema(RelationSchema):
 @pytest.yield_fixture()
 def custom_relation_schema(app):
     """Fixture for PID relations config with custom schemas."""
-    orig = app.config['PIDRELATIONS_RELATION_TYPES']
-    app.config['PIDRELATIONS_RELATION_TYPES'] = [
-        RelationType(0, 'version', 'Version',
-                     'invenio_pidrelations.contrib.'
-                     'versioning:PIDNodeVersioning',
-                     CustomRelationSchema),
+    orig = app.config["PIDRELATIONS_RELATION_TYPES"]
+    app.config["PIDRELATIONS_RELATION_TYPES"] = [
+        RelationType(
+            0,
+            "version",
+            "Version",
+            "invenio_pidrelations.contrib." "versioning:PIDNodeVersioning",
+            CustomRelationSchema,
+        ),
     ]
     yield app
-    app.config['PIDRELATIONS_RELATION_TYPES'] = orig
+    app.config["PIDRELATIONS_RELATION_TYPES"] = orig
 
 
 @pytest.fixture()
 def records(pids, db):
     """Fixture for the records."""
-    pid_versions = ['h1v1', 'h1v2', 'h2v1']
+    pid_versions = ["h1v1", "h1v2", "h2v1"]
     schema = {
-        'type': 'object',
-        'properties': {
-            'title': {'type': 'string'},
+        "type": "object",
+        "properties": {
+            "title": {"type": "string"},
         },
     }
     data = {
-        name: {'title': 'Test version {}'.format(name),
-               'recid': pids[name].pid_value,
-               '$schema': schema}
+        name: {
+            "title": "Test version {}".format(name),
+            "recid": pids[name].pid_value,
+            "$schema": schema,
+        }
         for name in pid_versions
     }
     records = dict()
     for name in pid_versions:
         record = Record.create(data[name])
-        pids[name].assign('rec', record.id)
+        pids[name].assign("rec", record.id)
         records[name] = record
     return records
 
@@ -299,5 +317,5 @@ def indexed_records(es, records):
     # flush the indices so that indexed records are searchable
     for pid_name, record in records.items():
         RecordIndexer().index(record)
-    es.indices.flush('*')
+    es.indices.flush("*")
     return records
