@@ -127,7 +127,7 @@ def resolve_pid(fetched_pid):
     return PersistentIdentifier.get(
         pid_type=fetched_pid.pid_type,
         pid_value=fetched_pid.pid_value,
-        pid_provider=fetched_pid.provider.pid_provider
+        pid_provider=fetched_pid.provider.pid_provider,
     )
 
 
@@ -138,8 +138,7 @@ class PIDNode(object):
     relation_type.
     """
 
-    def __init__(self, pid, relation_type,
-                 max_children=None, max_parents=None):
+    def __init__(self, pid, relation_type, max_children=None, max_parents=None):
         """Constructor.
 
         :param pid: the central PID of the node.
@@ -172,11 +171,10 @@ class PIDNode(object):
 
     def _check_child_limits(self, child_pid):
         """Check that inserting a child is within the limits."""
-        if self.max_children is not None and \
-                self.children.count() >= self.max_children:
+        if self.max_children is not None and self.children.count() >= self.max_children:
             raise PIDRelationConsistencyError(
-                "Max number of children is set to {}.".
-                format(self.max_children))
+                "Max number of children is set to {}.".format(self.max_children)
+            )
         if self.max_parents is not None:
             stmt = (
                 select(db.func.count())
@@ -316,16 +314,17 @@ class PIDNodeOrdered(PIDNode):
         If the 'pid' is a Version PID, return the latest of its siblings.
         Return None for the non-versioned PIDs.
         """
-        return self.children.filter(
-            PIDRelation.index.isnot(None)).ordered().first()
+        return self.children.filter(PIDRelation.index.isnot(None)).ordered().first()
 
     def next_child(self, child_pid):
         """Get the next child PID in the PID relation."""
         relation = self._get_child_relation(child_pid)
         if relation.index is not None:
-            return self.children.filter(
-                PIDRelation.index > relation.index
-            ).ordered(ord='asc').first()
+            return (
+                self.children.filter(PIDRelation.index > relation.index)
+                .ordered(ord="asc")
+                .first()
+            )
         else:
             return None
 
@@ -333,9 +332,11 @@ class PIDNodeOrdered(PIDNode):
         """Get the previous child PID in the PID relation."""
         relation = self._get_child_relation(child_pid)
         if relation.index is not None:
-            return self.children.filter(
-                PIDRelation.index < relation.index
-            ).ordered(ord='desc').first()
+            return (
+                self.children.filter(PIDRelation.index < relation.index)
+                .ordered(ord="desc")
+                .first()
+            )
         else:
             return None
 
@@ -397,6 +398,6 @@ class PIDNodeOrdered(PIDNode):
 
 
 __all__ = (
-    'PIDNode',
-    'PIDNodeOrdered',
+    "PIDNode",
+    "PIDNodeOrdered",
 )

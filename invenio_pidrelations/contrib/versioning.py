@@ -48,24 +48,23 @@ class PIDNodeVersioning(PIDNodeOrdered):
 
         :param pid: either the parent PID or a specific record version PID.
         """
-        self.relation_type = resolve_relation_type_config('version')
+        self.relation_type = resolve_relation_type_config("version")
         super(PIDNodeVersioning, self).__init__(
-            pid=pid, relation_type=self.relation_type,
-            max_parents=1, max_children=None
+            pid=pid, relation_type=self.relation_type, max_parents=1, max_children=None
         )
 
     @property
     def children(self):
         """Children of the parent."""
-        return super(PIDNodeVersioning, self).\
-            children.status(PIDStatus.REGISTERED)
+        return super(PIDNodeVersioning, self).children.status(PIDStatus.REGISTERED)
 
     def insert_child(self, child_pid, index=-1):
         """Insert a Version child PID."""
         if child_pid.status != PIDStatus.REGISTERED:
             raise PIDRelationConsistencyError(
                 "Version PIDs should have status 'REGISTERED'. Use "
-                "insert_draft_child to insert 'RESERVED' draft PID.")
+                "insert_draft_child to insert 'RESERVED' draft PID."
+            )
         with db.session.begin_nested():
             # if there is a draft and "child" is inserted as the last version,
             # it should be inserted before the draft.
@@ -84,18 +83,20 @@ class PIDNodeVersioning(PIDNodeOrdered):
         if child_pid.status == PIDStatus.RESERVED:
             raise PIDRelationConsistencyError(
                 "Version PIDs should not have status 'RESERVED'. Use "
-                "remove_draft_child to remove a draft PID.")
+                "remove_draft_child to remove a draft PID."
+            )
         with db.session.begin_nested():
-            super(PIDNodeVersioning, self).remove_child(child_pid,
-                                                        reorder=True)
+            super(PIDNodeVersioning, self).remove_child(child_pid, reorder=True)
             self.update_redirect()
 
     @property
     def draft_child(self):
         """Get the draft (RESERVED) child."""
-        return super(PIDNodeVersioning, self).children.status(
-            PIDStatus.RESERVED
-        ).one_or_none()
+        return (
+            super(PIDNodeVersioning, self)
+            .children.status(PIDStatus.RESERVED)
+            .one_or_none()
+        )
 
     @property
     def draft_child_deposit(self):
@@ -112,23 +113,26 @@ class PIDNodeVersioning(PIDNodeOrdered):
         """Insert a draft child to versioning."""
         if child_pid.status != PIDStatus.RESERVED:
             raise PIDRelationConsistencyError(
-                "Draft child should have status 'RESERVED'")
+                "Draft child should have status 'RESERVED'"
+            )
 
         if not self.draft_child:
             with db.session.begin_nested():
-                super(PIDNodeVersioning, self).insert_child(child_pid,
-                                                            index=-1)
+                super(PIDNodeVersioning, self).insert_child(child_pid, index=-1)
         else:
             raise PIDRelationConsistencyError(
                 "Draft child already exists for this relation: {0}".format(
-                    self.draft_child))
+                    self.draft_child
+                )
+            )
 
     def remove_draft_child(self):
         """Remove the draft child from versioning."""
         if self.draft_child:
             with db.session.begin_nested():
-                super(PIDNodeVersioning, self).remove_child(self.draft_child,
-                                                            reorder=True)
+                super(PIDNodeVersioning, self).remove_child(
+                    self.draft_child, reorder=True
+                )
 
     def update_redirect(self):
         """Update the parent redirect to the current last child.
@@ -140,10 +144,13 @@ class PIDNodeVersioning(PIDNodeOrdered):
         """
         if self.last_child:
             self._resolved_pid.redirect(self.last_child)
-        elif any(map(lambda pid: pid.status not in [PIDStatus.DELETED,
-                                                    PIDStatus.REGISTERED,
-                                                    PIDStatus.RESERVED],
-                     super(PIDNodeVersioning, self).children.all())):
+        elif any(
+            map(
+                lambda pid: pid.status
+                not in [PIDStatus.DELETED, PIDStatus.REGISTERED, PIDStatus.RESERVED],
+                super(PIDNodeVersioning, self).children.all(),
+            )
+        ):
             raise PIDRelationConsistencyError(
                 "Invalid relation state. Only REGISTERED, RESERVED "
                 "and DELETED PIDs are supported."
@@ -151,9 +158,7 @@ class PIDNodeVersioning(PIDNodeOrdered):
 
 
 versioning_blueprint = Blueprint(
-    'invenio_pidrelations_versioning',
-    __name__,
-    template_folder='templates'
+    "invenio_pidrelations_versioning", __name__, template_folder="templates"
 )
 
 
@@ -163,7 +168,4 @@ def to_versioning_api(pid):
     return PIDNodeVersioning(pid=pid)
 
 
-__all__ = (
-    'PIDNodeVersioning',
-    'versioning_blueprint'
-)
+__all__ = ("PIDNodeVersioning", "versioning_blueprint")

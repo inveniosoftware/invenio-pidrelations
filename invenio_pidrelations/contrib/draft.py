@@ -35,8 +35,7 @@ class PIDNodeDraft(PIDNode):
 
         :param pid: either the published record PID or the deposit PID.
         """
-        self.relation_type = resolve_relation_type_config('record_draft')
+        self.relation_type = resolve_relation_type_config("record_draft")
         super(PIDNodeDraft, self).__init__(
-            pid=pid, relation_type=self.relation_type,
-            max_parents=1, max_children=1
+            pid=pid, relation_type=self.relation_type, max_parents=1, max_children=1
         )

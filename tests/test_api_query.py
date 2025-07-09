@@ -17,62 +17,71 @@ from invenio_pidrelations.api import PIDQuery
 from invenio_pidrelations.models import PIDRelation
 
 
-@pytest.mark.parametrize("order, sort", [
-    # Test default value, i.e. "desc"
-    ({}, lambda children: list(reversed(children))),
-    ({'ord': 'asc'}, lambda children: children),
-    ({'ord': 'desc'}, lambda children: list(reversed(children)))
-])
+@pytest.mark.parametrize(
+    "order, sort",
+    [
+        # Test default value, i.e. "desc"
+        ({}, lambda children: list(reversed(children))),
+        ({"ord": "asc"}, lambda children: children),
+        ({"ord": "desc"}, lambda children: list(reversed(children))),
+    ],
+)
 def test_query_order(db, version_pids, order, sort):
     """Test PIDQuery.order()."""
-    result = PIDQuery(select(PersistentIdentifier), db.session).join(
-        PIDRelation,
-        PersistentIdentifier.id == PIDRelation.child_id
-    ).filter(
-        PIDRelation.parent_id == version_pids[0]['parent'].id
-    ).ordered(**order).all()
-    assert result == sort(version_pids[0]['children'])
+    result = (
+        PIDQuery(select(PersistentIdentifier), db.session)
+        .join(PIDRelation, PersistentIdentifier.id == PIDRelation.child_id)
+        .filter(PIDRelation.parent_id == version_pids[0]["parent"].id)
+        .ordered(**order)
+        .all()
+    )
+    assert result == sort(version_pids[0]["children"])
 
 
-@pytest.mark.parametrize("status, filt", [
-    (
-        # Test with a PIDStatus
-        PIDStatus.REGISTERED,
-        lambda children: [child for child in children if child.status in [
-            PIDStatus.REGISTERED
-        ]]
-    ),
-    (
-        # Test with a list of PIDStatus
-        [PIDStatus.REGISTERED, PIDStatus.DELETED],
-        lambda children: [child for child in children if child.status in [
-            PIDStatus.REGISTERED, PIDStatus.DELETED
-        ]]
-    ),
-])
+@pytest.mark.parametrize(
+    "status, filt",
+    [
+        (
+            # Test with a PIDStatus
+            PIDStatus.REGISTERED,
+            lambda children: [
+                child for child in children if child.status in [PIDStatus.REGISTERED]
+            ],
+        ),
+        (
+            # Test with a list of PIDStatus
+            [PIDStatus.REGISTERED, PIDStatus.DELETED],
+            lambda children: [
+                child
+                for child in children
+                if child.status in [PIDStatus.REGISTERED, PIDStatus.DELETED]
+            ],
+        ),
+    ],
+)
 def test_query_status(db, version_pids, status, filt):
     """Test PIDQuery.status()."""
     # test with simple join
-    result = PIDQuery(select(PersistentIdentifier), db.session).join(
-        PIDRelation,
-        PersistentIdentifier.id == PIDRelation.child_id
-    ).filter(
-        PIDRelation.parent_id == version_pids[0]['parent'].id
-    ).status(status).ordered('asc').all()
-    assert result == filt(version_pids[0]['children'])
+    result = (
+        PIDQuery(select(PersistentIdentifier), db.session)
+        .join(PIDRelation, PersistentIdentifier.id == PIDRelation.child_id)
+        .filter(PIDRelation.parent_id == version_pids[0]["parent"].id)
+        .status(status)
+        .ordered("asc")
+        .all()
+    )
+    assert result == filt(version_pids[0]["children"])
 
     # test with double join (parent and child PID)
-    parent_pid = aliased(PersistentIdentifier, name='parent_pid')
-    child_pid = aliased(PersistentIdentifier, name='child_pid')
-    result2 = PIDQuery(
-        select(child_pid), db.session, _filtered_pid_class=child_pid
-    ).join(
-        PIDRelation,
-        child_pid.id == PIDRelation.child_id
-    ).join(
-        parent_pid,
-        parent_pid.id == PIDRelation.parent_id
-    ).filter(
-        parent_pid.pid_value == version_pids[0]['parent'].pid_value
-    ).status(status).ordered(ord='asc').all()
-    assert result == filt(version_pids[0]['children'])
+    parent_pid = aliased(PersistentIdentifier, name="parent_pid")
+    child_pid = aliased(PersistentIdentifier, name="child_pid")
+    result2 = (
+        PIDQuery(select(child_pid), db.session, _filtered_pid_class=child_pid)
+        .join(PIDRelation, child_pid.id == PIDRelation.child_id)
+        .join(parent_pid, parent_pid.id == PIDRelation.parent_id)
+        .filter(parent_pid.pid_value == version_pids[0]["parent"].pid_value)
+        .status(status)
+        .ordered(ord="asc")
+        .all()
+    )
+    assert result == filt(version_pids[0]["children"])

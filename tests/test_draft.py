@@ -24,8 +24,8 @@ from invenio_pidrelations.utils import resolve_relation_type_config
 def test_record_draft(app, db, build_pid, recids):
     """Test RecordDraft API."""
 
-    parent_pids = [PIDNodeDraft(pid) for pid in create_pids(2, 'parent')]
-    draft_pids = create_pids(2, 'draft')
+    parent_pids = [PIDNodeDraft(pid) for pid in create_pids(2, "parent")]
+    draft_pids = create_pids(2, "draft")
 
     # create a parent-draft relationship
     parent_pids[0].insert_child(draft_pids[0])

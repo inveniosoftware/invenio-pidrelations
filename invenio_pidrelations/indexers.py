@@ -18,8 +18,7 @@ from .contrib.versioning import PIDNodeVersioning
 from .serializers.utils import serialize_relations
 
 
-def index_relations(sender, pid_type, json=None,
-                    record=None, index=None, **kwargs):
+def index_relations(sender, pid_type, json=None, record=None, index=None, **kwargs):
     """Add relations to the indexed record."""
     if not json:
         json = {}
@@ -31,12 +30,18 @@ def index_relations(sender, pid_type, json=None,
     if pid:
         relations = serialize_relations(pid)
         if relations:
-            json['relations'] = relations
+            json["relations"] = relations
     return json
 
 
-def index_siblings(pid, include_pid=False, children=None,
-                   neighbors_eager=False, eager=False, with_deposits=True):
+def index_siblings(
+    pid,
+    include_pid=False,
+    children=None,
+    neighbors_eager=False,
+    eager=False,
+    with_deposits=True,
+):
     """Send sibling records of the passed pid for indexing.
 
     Note: By default does not index the 'pid' itself,
@@ -53,8 +58,9 @@ def index_siblings(pid, include_pid=False, children=None,
         immediately, and the rest with a bulk_index (default: False)
     :param with_deposits: Reindex also corresponding record's deposits.
     """
-    assert not (neighbors_eager and eager), \
-        """Only one of the 'eager' and 'neighbors_eager' flags
+    assert not (
+        neighbors_eager and eager
+    ), """Only one of the 'eager' and 'neighbors_eager' flags
         can be set to True, not both"""
     if children is None:
         parent_pid = PIDNodeVersioning(pid=pid).parents.first()
@@ -71,11 +77,11 @@ def index_siblings(pid, include_pid=False, children=None,
 
     if include_pid:
         # [X X X X] [X X X]  Includes pid to the 'left' set
-        left = children[:idx + 1]
+        left = children[: idx + 1]
     else:
         # [X X X] X [X X X]
         left = children[:idx]
-    right = children[idx + 1:]
+    right = children[idx + 1 :]
 
     if eager:
         eager_uuids = left + right
@@ -93,10 +99,14 @@ def index_siblings(pid, include_pid=False, children=None,
 
     def get_dep_uuids(rec_uuids):
         """Get corresponding deposit UUIDs from record's UUIDs."""
-        return [str(PersistentIdentifier.get(
-                    'depid',
-                    Record.get_record(id_)['_deposit']['id']).object_uuid)
-                for id_ in rec_uuids]
+        return [
+            str(
+                PersistentIdentifier.get(
+                    "depid", Record.get_record(id_)["_deposit"]["id"]
+                ).object_uuid
+            )
+            for id_ in rec_uuids
+        ]
 
     if with_deposits:
         eager_uuids += get_dep_uuids(eager_uuids)

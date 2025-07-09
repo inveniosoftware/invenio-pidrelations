@@ -22,18 +22,17 @@ from invenio_pidrelations.errors import PIDRelationConsistencyError
 
 _ = make_lazy_gettext(lambda: gettext)
 
-logger = logging.getLogger('invenio-pidrelations')
+logger = logging.getLogger("invenio-pidrelations")
 
 
 class PIDRelation(db.Model, Timestamp):
     """Model persistent identifier relations."""
 
-    __tablename__ = 'pidrelations_pidrelation'
+    __tablename__ = "pidrelations_pidrelation"
 
     parent_id = db.Column(
         db.Integer,
-        db.ForeignKey(PersistentIdentifier.id, onupdate="CASCADE",
-                      ondelete="CASCADE"),
+        db.ForeignKey(PersistentIdentifier.id, onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
         primary_key=True,
     )
@@ -41,16 +40,13 @@ class PIDRelation(db.Model, Timestamp):
 
     child_id = db.Column(
         db.Integer,
-        db.ForeignKey(PersistentIdentifier.id, onupdate="CASCADE",
-                      ondelete="CASCADE"),
+        db.ForeignKey(PersistentIdentifier.id, onupdate="CASCADE", ondelete="CASCADE"),
         nullable=False,
-        primary_key=True)
+        primary_key=True,
+    )
     """Child PID of the relation."""
 
-    relation_type = db.Column(
-        db.SmallInteger(),
-        nullable=False,
-        primary_key=True)
+    relation_type = db.Column(db.SmallInteger(), nullable=False, primary_key=True)
     """Type of relation between the parent and child PIDs."""
 
     index = db.Column(db.Integer, nullable=True)
@@ -62,20 +58,22 @@ class PIDRelation(db.Model, Timestamp):
     parent = db.relationship(
         PersistentIdentifier,
         primaryjoin=PersistentIdentifier.id == parent_id,
-        backref=backref('child_relations', lazy='dynamic',
-                        cascade='all,delete'))
+        backref=backref("child_relations", lazy="dynamic", cascade="all,delete"),
+    )
 
     child = db.relationship(
         PersistentIdentifier,
         primaryjoin=PersistentIdentifier.id == child_id,
-        backref=backref('parent_relations', lazy='dynamic',
-                        cascade='all,delete'))
+        backref=backref("parent_relations", lazy="dynamic", cascade="all,delete"),
+    )
 
     def __repr__(self):
         """Text representation of a PID relation."""
-        return "<PIDRelation: ({r.parent.pid_type}:{r.parent.pid_value}) -> " \
-               "({r.child.pid_type}:{r.child.pid_value}) " \
-               "(Type: {r.relation_type}, Idx: {r.index})>".format(r=self)
+        return (
+            "<PIDRelation: ({r.parent.pid_type}:{r.parent.pid_value}) -> "
+            "({r.child.pid_type}:{r.child.pid_value}) "
+            "(Type: {r.relation_type}, Idx: {r.index})>".format(r=self)
+        )
 
     @classmethod
     def get_parent_relations(cls, pid):
@@ -92,10 +90,12 @@ class PIDRelation(db.Model, Timestamp):
         """Create a PID relation for given parent and child."""
         try:
             with db.session.begin_nested():
-                obj = cls(parent_id=parent.id,
-                          child_id=child.id,
-                          relation_type=relation_type,
-                          index=index)
+                obj = cls(
+                    parent_id=parent.id,
+                    child_id=child.id,
+                    relation_type=relation_type,
+                    index=index,
+                )
                 db.session.add(obj)
         except IntegrityError:
             raise PIDRelationConsistencyError("PID Relation already exists.")
@@ -109,12 +109,14 @@ class PIDRelation(db.Model, Timestamp):
     @classmethod
     def relation_exists(self, parent, child, relation_type):
         """Determine if given relation already exists."""
-        return PIDRelation.query.filter_by(
-            child_pid_id=child.id,
-            parent_pid_id=parent.id,
-            relation_type=relation_type).count() > 0
+        return (
+            PIDRelation.query.filter_by(
+                child_pid_id=child.id,
+                parent_pid_id=parent.id,
+                relation_type=relation_type,
+            ).count()
+            > 0
+        )
 
 
-__all__ = (
-    'PIDRelation',
-)
+__all__ = ("PIDRelation",)

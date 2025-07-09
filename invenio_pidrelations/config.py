@@ -10,14 +10,21 @@
 
 from collections import namedtuple
 
-RelationType = namedtuple('RelationType',
-                          ['id', 'name', 'label', 'api', 'schema'])
+RelationType = namedtuple("RelationType", ["id", "name", "label", "api", "schema"])
 
 PIDRELATIONS_RELATION_TYPES = [
-    RelationType(0, 'version', 'Version',
-                 'invenio_pidrelations.contrib.versioning:PIDNodeVersioning',
-                 'invenio_pidrelations.serializers.schemas.RelationSchema'),
-    RelationType(1, 'record_draft', 'Record Draft',
-                 'invenio_pidrelations.contrib.draft:PIDNodeDraft',
-                 'invenio_pidrelations.serializers.schemas.RelationSchema'),
+    RelationType(
+        0,
+        "version",
+        "Version",
+        "invenio_pidrelations.contrib.versioning:PIDNodeVersioning",
+        "invenio_pidrelations.serializers.schemas.RelationSchema",
+    ),
+    RelationType(
+        1,
+        "record_draft",
+        "Record Draft",
+        "invenio_pidrelations.contrib.draft:PIDNodeDraft",
+        "invenio_pidrelations.serializers.schemas.RelationSchema",
+    ),
 ]
