@@ -9,6 +9,14 @@
 
 Changes
 =======
+Version 1.0.0 (released 05-08-2023)
+-----------------------------------
+- global: bump dependencies
+- global: made PIDQuery wrap new SQLAlchemy version
+- global: move packages from setup.py to setup.cfg
+- global: format project with black
+- global: drop support for python<3.9 and postgresql<=13
+- tests: enable correct pytest configuration
 
 Version 0.2.0 (released 30-11-2023)
 -----------------------------------
